@@ -20,12 +20,14 @@ export interface MatchState {
   clockRunning: boolean
   clockStartedAt: number | null
   clockElapsedMs: number
+  savedNames: string[]
 }
 
 export const STORAGE_KEY = 'bst-score-state'
 export const HISTORY_LIMIT = 25
 export const BEST_OF_OPTIONS = [1, 3, 5] as const
 export const GAME_HISTORY_LIMIT = 25
+export const SAVED_NAMES_LIMIT = 8
 
 export interface CompletedGame {
   id: string
@@ -56,4 +58,5 @@ export const DEFAULT_STATE: MatchState = {
   clockRunning: true,
   clockStartedAt: Date.now(),
   clockElapsedMs: 0,
+  savedNames: [],
 }

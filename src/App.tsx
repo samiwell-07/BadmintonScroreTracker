@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Affix, Box, Button, Container, SimpleGrid, Stack } from '@mantine/core'
+import { Box, Container, Stack } from '@mantine/core'
 import { MatchHeader } from './components/MatchHeader'
-import { PlayerScoreCard } from './components/PlayerScoreCard'
-import { MatchSettingsCard } from './components/MatchSettingsCard'
-import { MatchControlsCard } from './components/MatchControlsCard'
-import { MatchInsightsCard } from './components/MatchInsightsCard'
-import { GameHistoryCard } from './components/GameHistoryCard'
 import { useMatchController } from './hooks/useMatchController'
 import { useThemeColors } from './hooks/useThemeColors'
 import type { MatchState } from './types/match'
 import type { MatchConfig } from './utils/match'
+import { PlayerGridSection } from './components/PlayerGridSection'
+import { MatchDetailPanels } from './components/MatchDetailPanels'
+import { ScoreOnlyOverlays } from './components/ScoreOnlyOverlays'
 
 function App() {
   const { match, history, gamesNeeded, matchIsLive, actions } = useMatchController()
@@ -23,6 +21,9 @@ function App() {
     handleResetMatch,
     handleSwapEnds,
     handleServerToggle,
+    handleSetServer,
+    handleSavePlayerName,
+    handleApplySavedName,
     handleClockToggle,
     pushUpdate,
   } = actions
@@ -36,6 +37,10 @@ function App() {
   const handleScoreOnlyToggle = () => setScoreOnlyMode((previous) => !previous)
 
   const [displayElapsedMs, setDisplayElapsedMs] = useState(match.clockElapsedMs)
+
+  useEffect(() => {
+    document.title = 'Badminton Score Tracker'
+  }, [])
 
   useEffect(() => {
     if (!match.clockRunning || !match.clockStartedAt) {
@@ -107,77 +112,51 @@ function App() {
               onToggleScoreOnly={handleScoreOnlyToggle}
             />
           )}
-
-          <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
-            {match.players.map((player, index) => {
-              const opponent = match.players[(index + 1) % match.players.length]
-              const isServer = match.server === player.id
-
-              return (
-                <PlayerScoreCard
-                  key={`${player.id}-${player.name}`}
-                  player={player}
-                  opponent={opponent}
-                  cardBg={cardBg}
-                  mutedText={mutedText}
-                  isServer={isServer}
-                  matchWinner={match.matchWinner}
-                  gamesNeeded={gamesNeeded}
-                  matchConfig={matchConfig}
-                  matchIsLive={matchIsLive}
-                  onNameChange={handleNameChange}
-                  onPointChange={handlePointChange}
-                />
-              )
-            })}
-          </SimpleGrid>
+          <PlayerGridSection
+            players={match.players}
+            cardBg={cardBg}
+            mutedText={mutedText}
+            server={match.server}
+            matchWinner={match.matchWinner}
+            gamesNeeded={gamesNeeded}
+            matchConfig={matchConfig}
+            matchIsLive={matchIsLive}
+            savedNames={match.savedNames}
+            onNameChange={handleNameChange}
+            onPointChange={handlePointChange}
+            onApplySavedName={handleApplySavedName}
+            onSaveName={handleSavePlayerName}
+          />
 
           {!scoreOnlyMode && (
-            <>
-              <MatchSettingsCard
-                cardBg={cardBg}
-                mutedText={mutedText}
-                match={match}
-                onRaceToChange={handleRaceToChange}
-                onBestOfChange={handleBestOfChange}
-                onWinByTwoToggle={handleWinByTwoToggle}
-              />
-
-              <MatchControlsCard
-                cardBg={cardBg}
-                onSwapEnds={handleSwapEnds}
-                onToggleServer={handleServerToggle}
-                onResetGame={handleResetGame}
-                onResetMatch={handleResetMatch}
-              />
-
-              <MatchInsightsCard
-                cardBg={cardBg}
-                mutedText={mutedText}
-                match={match}
-                gamesNeeded={gamesNeeded}
-                matchIsLive={matchIsLive}
-                elapsedMs={displayElapsedMs}
-                clockRunning={match.clockRunning}
-                onToggleClock={handleClockToggle}
-              />
-
-              <GameHistoryCard
-                cardBg={cardBg}
-                mutedText={mutedText}
-                games={match.completedGames}
-              />
-            </>
+            <MatchDetailPanels
+              cardBg={cardBg}
+              mutedText={mutedText}
+              match={match}
+              gamesNeeded={gamesNeeded}
+              matchIsLive={matchIsLive}
+              elapsedMs={displayElapsedMs}
+              onRaceToChange={handleRaceToChange}
+              onBestOfChange={handleBestOfChange}
+              onWinByTwoToggle={handleWinByTwoToggle}
+              onSwapEnds={handleSwapEnds}
+              onToggleServer={handleServerToggle}
+              onResetGame={handleResetGame}
+              onResetMatch={handleResetMatch}
+              onToggleClock={handleClockToggle}
+            />
           )}
         </Stack>
       </Container>
-      {scoreOnlyMode && (
-        <Affix position={{ top: 16, right: 16 }}>
-          <Button size="sm" color="teal" onClick={handleScoreOnlyToggle}>
-            Show full view
-          </Button>
-        </Affix>
-      )}
+      <ScoreOnlyOverlays
+        active={scoreOnlyMode}
+        mutedText={mutedText}
+        players={match.players}
+        server={match.server}
+        onExitScoreOnly={handleScoreOnlyToggle}
+        onSetServer={handleSetServer}
+        onToggleServer={handleServerToggle}
+      />
     </Box>
   )
 }

@@ -5,6 +5,7 @@ import {
   GAME_HISTORY_LIMIT,
   HISTORY_LIMIT,
   STORAGE_KEY,
+  SAVED_NAMES_LIMIT,
   getDefaultName,
   type CompletedGame,
   type MatchState,
@@ -24,6 +25,7 @@ const createDefaultState = (): MatchState => ({
   ...createFreshClockState(),
   players: DEFAULT_STATE.players.map((player) => ({ ...player })),
   completedGames: [],
+  savedNames: [],
   lastUpdated: Date.now(),
 })
 
@@ -32,6 +34,14 @@ const getLiveElapsedMs = (state: MatchState) =>
   (state.clockRunning && state.clockStartedAt
     ? Date.now() - state.clockStartedAt
     : 0)
+
+const upsertSavedName = (names: string[], name: string) => {
+  const lowered = name.toLowerCase()
+  const filtered = names.filter(
+    (existing) => existing.toLowerCase() !== lowered,
+  )
+  return [name, ...filtered].slice(0, SAVED_NAMES_LIMIT)
+}
 
 const readFromStorage = (): MatchState => {
   if (typeof window === 'undefined') {
@@ -68,6 +78,11 @@ const readFromStorage = (): MatchState => {
             : 0,
       }))
       .slice(0, GAME_HISTORY_LIMIT)
+    const parsedSavedNames = Array.isArray(parsed.savedNames)
+      ? parsed.savedNames
+          .map((name) => name?.toString().trim())
+          .filter((name): name is string => Boolean(name))
+      : DEFAULT_STATE.savedNames
     const parsedClockRunning =
       typeof parsed.clockRunning === 'boolean'
         ? parsed.clockRunning
@@ -103,6 +118,7 @@ const readFromStorage = (): MatchState => {
       clockRunning: parsedClockRunning,
       clockElapsedMs: parsedClockElapsed,
       clockStartedAt: parsedClockStartedAt,
+      savedNames: parsedSavedNames.slice(0, SAVED_NAMES_LIMIT),
     }
   } catch (error) {
     console.warn('Failed to parse stored match state', error)
@@ -292,6 +308,52 @@ export const useMatchController = () => {
     }))
   }
 
+  const handleSetServer = (playerId: PlayerId) => {
+    const isValidPlayer = match.players.some((player) => player.id === playerId)
+    if (!isValidPlayer) {
+      return
+    }
+
+    pushUpdate((state) => ({
+      ...state,
+      server: playerId,
+    }))
+  }
+
+  const handleSavePlayerName = (playerId: PlayerId) => {
+    const player = match.players.find((entry) => entry.id === playerId)
+    if (!player) {
+      return
+    }
+
+    const trimmed = player.name.trim()
+    if (!trimmed) {
+      showToast({ title: 'Cannot save empty name', status: 'warning' })
+      return
+    }
+
+    pushUpdate((state) => ({
+      ...state,
+      savedNames: upsertSavedName(state.savedNames, trimmed),
+    }))
+
+    showToast({ title: `Saved ${trimmed}`, status: 'success' })
+  }
+
+  const handleApplySavedName = (playerId: PlayerId, name: string) => {
+    const trimmed = name.trim()
+    if (!trimmed) {
+      return
+    }
+
+    pushUpdate((state) => ({
+      ...state,
+      players: state.players.map((player) =>
+        player.id === playerId ? { ...player, name: trimmed } : player,
+      ),
+    }))
+  }
+
   const handleClockToggle = () => {
     pushUpdate((state) => {
       if (state.clockRunning) {
@@ -326,6 +388,9 @@ export const useMatchController = () => {
       handleResetMatch,
       handleSwapEnds,
       handleServerToggle,
+      handleSetServer,
+      handleSavePlayerName,
+      handleApplySavedName,
       handleClockToggle,
       pushUpdate,
     },

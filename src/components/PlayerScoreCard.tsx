@@ -1,14 +1,18 @@
 import {
+  ActionIcon,
   Badge,
   Button,
   Card,
   Group,
+  Menu,
   Stack,
   Text,
   TextInput,
   Title,
+  Tooltip,
+  useMantineTheme,
 } from '@mantine/core'
-import { useMantineTheme } from '@mantine/core'
+import { IconBookmarkPlus, IconUserCircle } from '@tabler/icons-react'
 import { type FocusEvent, type KeyboardEvent } from 'react'
 import type { MatchConfig } from '../utils/match'
 import { didWinGame } from '../utils/match'
@@ -24,8 +28,11 @@ interface PlayerScoreCardProps {
   gamesNeeded: number
   matchConfig: MatchConfig
   matchIsLive: boolean
+  savedNames: string[]
   onNameChange: (playerId: PlayerId, name: string) => void
   onPointChange: (playerId: PlayerId, delta: number) => void
+  onApplySavedName: (playerId: PlayerId, name: string) => void
+  onSaveName: (playerId: PlayerId) => void
 }
 
 export const PlayerScoreCard = ({
@@ -38,8 +45,11 @@ export const PlayerScoreCard = ({
   gamesNeeded,
   matchConfig,
   matchIsLive,
+  savedNames,
   onNameChange,
   onPointChange,
+  onApplySavedName,
+  onSaveName,
 }: PlayerScoreCardProps) => {
   const theme = useMantineTheme()
   const isGamePoint = didWinGame(player.points + 1, opponent.points, matchConfig)
@@ -60,29 +70,59 @@ export const PlayerScoreCard = ({
     >
       <Stack gap="lg">
         <Group justify="space-between" align="flex-start" gap="sm">
-          <TextInput
-            key={`${player.id}-${player.name}`}
-            defaultValue={player.name}
-            onBlur={(event: FocusEvent<HTMLInputElement>) =>
-              onNameChange(player.id, event.currentTarget.value)
-            }
-            onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
-              if (event.key === 'Enter') {
-                event.currentTarget.blur()
+          <Group gap="xs" align="flex-start" style={{ flex: 1 }} wrap="nowrap">
+            <TextInput
+              key={`${player.id}-${player.name}`}
+              defaultValue={player.name}
+              onBlur={(event: FocusEvent<HTMLInputElement>) =>
+                onNameChange(player.id, event.currentTarget.value)
               }
-            }}
-            spellCheck={false}
-            maxLength={24}
-            styles={{
-              input: {
-                fontSize: '1.5rem',
-                fontWeight: 700,
-                backgroundColor: 'transparent',
-                border: 'none',
-                paddingLeft: 0,
-              },
-            }}
-          />
+              onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
+                if (event.key === 'Enter') {
+                  event.currentTarget.blur()
+                }
+              }}
+              spellCheck={false}
+              maxLength={24}
+              flex={1}
+              styles={{
+                input: {
+                  fontSize: '1.5rem',
+                  fontWeight: 700,
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  paddingLeft: 0,
+                },
+              }}
+            />
+            <Menu withinPortal position="bottom-end" shadow="md">
+              <Menu.Target>
+                <Tooltip label="Saved names">
+                  <ActionIcon variant="light" size="lg">
+                    <IconUserCircle size={18} />
+                  </ActionIcon>
+                </Tooltip>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Label>Saved names</Menu.Label>
+                {savedNames.length === 0 && (
+                  <Menu.Item disabled>No saved names</Menu.Item>
+                )}
+                {savedNames.map((name) => (
+                  <Menu.Item key={name} onClick={() => onApplySavedName(player.id, name)}>
+                    {name}
+                  </Menu.Item>
+                ))}
+                <Menu.Divider />
+                <Menu.Item
+                  leftSection={<IconBookmarkPlus size={16} />}
+                  onClick={() => onSaveName(player.id)}
+                >
+                  Save “{player.name}”
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
           <Group gap="xs" wrap="wrap">
             {isServer && (
               <Badge color="cyan" variant="light">
