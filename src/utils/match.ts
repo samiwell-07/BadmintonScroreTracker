@@ -41,3 +41,19 @@ export const formatRelativeTime = (timestamp: number) => {
   const days = Math.floor(hours / 24)
   return `${days}d ago`
 }
+
+const pad = (value: number) => value.toString().padStart(2, '0')
+
+export const formatDuration = (durationMs: number) => {
+  const safeMs = Math.max(0, durationMs)
+  const totalSeconds = Math.floor(safeMs / 1000)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+
+  if (hours > 0) {
+    return `${hours}:${pad(minutes)}:${pad(seconds)}`
+  }
+
+  return `${minutes}:${pad(seconds)}`
+}

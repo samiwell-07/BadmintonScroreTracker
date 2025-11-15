@@ -2,18 +2,40 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   BEST_OF_OPTIONS,
   DEFAULT_STATE,
+  GAME_HISTORY_LIMIT,
   HISTORY_LIMIT,
   STORAGE_KEY,
   getDefaultName,
+  type CompletedGame,
   type MatchState,
   type PlayerId,
 } from '../types/match'
 import { clampPoints, didWinGame } from '../utils/match'
 import { showToast } from '../utils/notifications'
 
+const createFreshClockState = () => ({
+  clockRunning: true,
+  clockStartedAt: Date.now(),
+  clockElapsedMs: 0,
+})
+
+const createDefaultState = (): MatchState => ({
+  ...DEFAULT_STATE,
+  ...createFreshClockState(),
+  players: DEFAULT_STATE.players.map((player) => ({ ...player })),
+  completedGames: [],
+  lastUpdated: Date.now(),
+})
+
+const getLiveElapsedMs = (state: MatchState) =>
+  state.clockElapsedMs +
+  (state.clockRunning && state.clockStartedAt
+    ? Date.now() - state.clockStartedAt
+    : 0)
+
 const readFromStorage = (): MatchState => {
   if (typeof window === 'undefined') {
-    return DEFAULT_STATE
+    return createDefaultState()
   }
 
   const isValidBestOf = (value: unknown): value is MatchState['bestOf'] =>
@@ -23,7 +45,7 @@ const readFromStorage = (): MatchState => {
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY)
     if (!stored) {
-      return DEFAULT_STATE
+      return createDefaultState()
     }
 
     const parsed = JSON.parse(stored) as Partial<MatchState>
@@ -32,27 +54,66 @@ const readFromStorage = (): MatchState => {
       : DEFAULT_STATE.bestOf
     const parsedMaxPoint = parsed.maxPoint ?? DEFAULT_STATE.maxPoint
     const parsedRaceTo = parsed.raceTo ?? DEFAULT_STATE.raceTo
+    const parsedCompletedGames = (
+      Array.isArray(parsed.completedGames)
+        ? parsed.completedGames
+        : DEFAULT_STATE.completedGames
+    )
+      .map((game, index) => ({
+        ...game,
+        number: game?.number ?? index + 1,
+        durationMs:
+          typeof game?.durationMs === 'number'
+            ? Math.max(0, game.durationMs)
+            : 0,
+      }))
+      .slice(0, GAME_HISTORY_LIMIT)
+    const parsedClockRunning =
+      typeof parsed.clockRunning === 'boolean'
+        ? parsed.clockRunning
+        : DEFAULT_STATE.clockRunning
+    const parsedClockElapsed = Math.max(
+      0,
+      typeof parsed.clockElapsedMs === 'number'
+        ? parsed.clockElapsedMs
+        : DEFAULT_STATE.clockElapsedMs,
+    )
+    const parsedClockStartedAt =
+      typeof parsed.clockStartedAt === 'number'
+        ? parsed.clockStartedAt
+        : parsedClockRunning
+          ? Date.now()
+          : null
 
     return {
-      ...DEFAULT_STATE,
+      ...createDefaultState(),
       ...parsed,
       players:
         parsed.players?.map((player, index) => ({
           ...DEFAULT_STATE.players[index],
           ...player,
-        })) ?? DEFAULT_STATE.players,
+        })) ?? DEFAULT_STATE.players.map((player) => ({ ...player })),
       matchWinner: parsed.matchWinner ?? null,
       server: parsed.server ?? DEFAULT_STATE.server,
       raceTo: Math.min(parsedRaceTo, parsedMaxPoint),
       maxPoint: parsedMaxPoint,
       winByTwo: parsed.winByTwo ?? DEFAULT_STATE.winByTwo,
       bestOf: parsedBestOf,
+      completedGames: parsedCompletedGames,
+      clockRunning: parsedClockRunning,
+      clockElapsedMs: parsedClockElapsed,
+      clockStartedAt: parsedClockStartedAt,
     }
   } catch (error) {
     console.warn('Failed to parse stored match state', error)
-    return DEFAULT_STATE
+    return createDefaultState()
   }
 }
+
+const createGameId = () =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`
 
 export const useMatchController = () => {
   const [match, setMatch] = useState<MatchState>(readFromStorage)
@@ -117,8 +178,26 @@ export const useMatchController = () => {
 
       const scorer = players.find((player) => player.id === playerId)!
       const opponent = players.find((player) => player.id !== playerId)!
+      const liveElapsedMs = getLiveElapsedMs(state)
 
       if (didWinGame(scorer.points, opponent.points, state)) {
+        let clockRunning = state.clockRunning
+        let clockStartedAt = state.clockStartedAt
+        let clockElapsedMs = state.clockElapsedMs
+
+        const completedGame: CompletedGame = {
+          id: createGameId(),
+          number: state.completedGames.length + 1,
+          timestamp: Date.now(),
+          winnerId: playerId,
+          winnerName: scorer.name,
+          durationMs: liveElapsedMs,
+          scores: players.reduce<CompletedGame['scores']>((acc, player) => {
+            acc[player.id] = { name: player.name, points: player.points }
+            return acc
+          }, {} as CompletedGame['scores']),
+        }
+
         const updatedPlayers = players.map((player) => ({
           ...player,
           points: 0,
@@ -131,6 +210,12 @@ export const useMatchController = () => {
         const isMatchWin = winner.games >= gamesNeeded
         const matchWinner = isMatchWin ? playerId : state.matchWinner
 
+        if (isMatchWin) {
+          clockElapsedMs = liveElapsedMs
+          clockRunning = false
+          clockStartedAt = null
+        }
+
         showToast({
           title: `${winner.name} wins the ${isMatchWin ? 'match' : 'game'}`,
           status: 'success',
@@ -141,6 +226,13 @@ export const useMatchController = () => {
           players: updatedPlayers,
           server: playerId,
           matchWinner: matchWinner ?? null,
+          completedGames: [completedGame, ...state.completedGames].slice(
+            0,
+            GAME_HISTORY_LIMIT,
+          ),
+          clockRunning,
+          clockStartedAt,
+          clockElapsedMs,
         }
       }
 
@@ -182,6 +274,7 @@ export const useMatchController = () => {
       })),
       matchWinner: null,
       server: 'playerA',
+      ...createFreshClockState(),
     }))
   }
 
@@ -199,6 +292,25 @@ export const useMatchController = () => {
     }))
   }
 
+  const handleClockToggle = () => {
+    pushUpdate((state) => {
+      if (state.clockRunning) {
+        return {
+          ...state,
+          clockRunning: false,
+          clockStartedAt: null,
+          clockElapsedMs: getLiveElapsedMs(state),
+        }
+      }
+
+      return {
+        ...state,
+        clockRunning: true,
+        clockStartedAt: Date.now(),
+      }
+    })
+  }
+
   const matchIsLive = !match.matchWinner
 
   return {
@@ -214,6 +326,7 @@ export const useMatchController = () => {
       handleResetMatch,
       handleSwapEnds,
       handleServerToggle,
+      handleClockToggle,
       pushUpdate,
     },
   }

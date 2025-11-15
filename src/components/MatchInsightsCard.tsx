@@ -1,23 +1,42 @@
-import { Badge, Card, Divider, Group, Stack, Text, Title } from '@mantine/core'
+import { Badge, Button, Card, Divider, Group, Stack, Text, Title } from '@mantine/core'
 import type { MatchState } from '../types/match'
-import { formatRelativeTime } from '../utils/match'
+import { formatDuration, formatRelativeTime } from '../utils/match'
 
 interface MatchInsightsCardProps {
   cardBg: string
+  mutedText: string
   match: MatchState
   gamesNeeded: number
   matchIsLive: boolean
+  elapsedMs: number
+  clockRunning: boolean
+  onToggleClock: () => void
 }
 
 export const MatchInsightsCard = ({
   cardBg,
+  mutedText,
   match,
   gamesNeeded,
   matchIsLive,
+  elapsedMs,
+  clockRunning,
+  onToggleClock,
 }: MatchInsightsCardProps) => (
   <Card mt="lg" withBorder radius="lg" p="xl" style={{ backgroundColor: cardBg }}>
     <Stack gap="md">
-      <Title order={5}>Match insights</Title>
+      <Group justify="space-between" align="center">
+        <Title order={5}>Match insights</Title>
+        <Button variant="light" onClick={onToggleClock}>
+          {clockRunning ? 'Pause clock' : 'Resume clock'}
+        </Button>
+      </Group>
+      <Stack gap={4}>
+        <Text size="sm" c={mutedText}>
+          Duration
+        </Text>
+        <Title order={3}>{formatDuration(elapsedMs)}</Title>
+      </Stack>
       <Group gap="sm" wrap="wrap">
         <Badge color={matchIsLive ? 'green' : 'grape'} variant="light">
           {matchIsLive ? 'Live' : 'Completed'}
@@ -36,7 +55,7 @@ export const MatchInsightsCard = ({
         </Badge>
       </Group>
       <Divider />
-      <Text c="dimmed">
+      <Text c={mutedText}>
         Tip: add the page to your home screen for a fast, offline-ready scoreboard during practice or tournaments.
       </Text>
     </Stack>

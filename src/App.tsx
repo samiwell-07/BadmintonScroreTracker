@@ -1,9 +1,11 @@
+import { useEffect, useState } from 'react'
 import { Box, Container, SimpleGrid, Stack } from '@mantine/core'
 import { MatchHeader } from './components/MatchHeader'
 import { PlayerScoreCard } from './components/PlayerScoreCard'
 import { MatchSettingsCard } from './components/MatchSettingsCard'
 import { MatchControlsCard } from './components/MatchControlsCard'
 import { MatchInsightsCard } from './components/MatchInsightsCard'
+import { GameHistoryCard } from './components/GameHistoryCard'
 import { useMatchController } from './hooks/useMatchController'
 import { useThemeColors } from './hooks/useThemeColors'
 import type { MatchState } from './types/match'
@@ -20,6 +22,7 @@ function App() {
     handleResetMatch,
     handleSwapEnds,
     handleServerToggle,
+    handleClockToggle,
     pushUpdate,
   } = actions
 
@@ -28,6 +31,26 @@ function App() {
     maxPoint: match.maxPoint,
     winByTwo: match.winByTwo,
   }
+
+  const [displayElapsedMs, setDisplayElapsedMs] = useState(match.clockElapsedMs)
+
+  useEffect(() => {
+    if (!match.clockRunning || !match.clockStartedAt) {
+      setDisplayElapsedMs(match.clockElapsedMs)
+      return
+    }
+
+    const startOffset = match.clockElapsedMs
+    const startedAt = match.clockStartedAt
+
+    const update = () => {
+      setDisplayElapsedMs(startOffset + (Date.now() - startedAt))
+    }
+
+    update()
+    const intervalId = window.setInterval(update, 1000)
+    return () => window.clearInterval(intervalId)
+  }, [match.clockRunning, match.clockStartedAt, match.clockElapsedMs])
 
   const handleRaceToChange = (value: number) => {
     pushUpdate((state) => ({
@@ -121,9 +144,19 @@ function App() {
 
           <MatchInsightsCard
             cardBg={cardBg}
+            mutedText={mutedText}
             match={match}
             gamesNeeded={gamesNeeded}
             matchIsLive={matchIsLive}
+            elapsedMs={displayElapsedMs}
+            clockRunning={match.clockRunning}
+            onToggleClock={handleClockToggle}
+          />
+
+          <GameHistoryCard
+            cardBg={cardBg}
+            mutedText={mutedText}
+            games={match.completedGames}
           />
         </Stack>
       </Container>
