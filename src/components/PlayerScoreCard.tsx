@@ -1,22 +1,9 @@
-import {
-  ActionIcon,
-  Badge,
-  Button,
-  Card,
-  Group,
-  Menu,
-  Stack,
-  Text,
-  TextInput,
-  Title,
-  Tooltip,
-  useMantineTheme,
-} from '@mantine/core'
-import { IconBookmarkPlus, IconUserCircle } from '@tabler/icons-react'
+import { Badge, Button, Card, Group, Stack, Text, TextInput, Title, useMantineTheme } from '@mantine/core'
 import { type FocusEvent, type KeyboardEvent } from 'react'
 import type { MatchConfig } from '../utils/match'
 import { didWinGame } from '../utils/match'
 import type { PlayerId, PlayerState } from '../types/match'
+import { SavedNamesMenu } from './SavedNamesMenu'
 
 interface PlayerScoreCardProps {
   player: PlayerState
@@ -29,10 +16,13 @@ interface PlayerScoreCardProps {
   matchConfig: MatchConfig
   matchIsLive: boolean
   savedNames: string[]
+  doublesMode: boolean
   onNameChange: (playerId: PlayerId, name: string) => void
   onPointChange: (playerId: PlayerId, delta: number) => void
   onApplySavedName: (playerId: PlayerId, name: string) => void
   onSaveName: (playerId: PlayerId) => void
+  onTeammateNameChange: (playerId: PlayerId, teammateId: string, name: string) => void
+  onSaveTeammateName: (playerId: PlayerId, teammateId: string) => void
 }
 
 export const PlayerScoreCard = ({
@@ -46,15 +36,19 @@ export const PlayerScoreCard = ({
   matchConfig,
   matchIsLive,
   savedNames,
+  doublesMode,
   onNameChange,
   onPointChange,
   onApplySavedName,
   onSaveName,
+  onTeammateNameChange,
+  onSaveTeammateName,
 }: PlayerScoreCardProps) => {
   const theme = useMantineTheme()
   const isGamePoint = didWinGame(player.points + 1, opponent.points, matchConfig)
   const isMatchPoint = isGamePoint && player.games === gamesNeeded - 1
   const isWinner = matchWinner === player.id
+  const serviceCourtLabel = player.points % 2 === 0 ? 'Right court' : 'Left court'
 
   return (
     <Card
@@ -95,38 +89,20 @@ export const PlayerScoreCard = ({
                 },
               }}
             />
-            <Menu withinPortal position="bottom-end" shadow="md">
-              <Menu.Target>
-                <Tooltip label="Saved names">
-                  <ActionIcon variant="light" size="lg">
-                    <IconUserCircle size={18} />
-                  </ActionIcon>
-                </Tooltip>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Label>Saved names</Menu.Label>
-                {savedNames.length === 0 && (
-                  <Menu.Item disabled>No saved names</Menu.Item>
-                )}
-                {savedNames.map((name) => (
-                  <Menu.Item key={name} onClick={() => onApplySavedName(player.id, name)}>
-                    {name}
-                  </Menu.Item>
-                ))}
-                <Menu.Divider />
-                <Menu.Item
-                  leftSection={<IconBookmarkPlus size={16} />}
-                  onClick={() => onSaveName(player.id)}
-                >
-                  Save “{player.name}”
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
+            <SavedNamesMenu
+              savedNames={savedNames}
+              menuPosition="bottom-end"
+              onApply={(name) => onApplySavedName(player.id, name)}
+              onSave={() => onSaveName(player.id)}
+              saveLabel={`Save “${player.name}”`}
+              onClear={() => onNameChange(player.id, '')}
+              clearLabel="Reset to default"
+            />
           </Group>
           <Group gap="xs" wrap="wrap">
             {isServer && (
               <Badge color="cyan" variant="light">
-                Serving
+                Serving - {serviceCourtLabel}
               </Badge>
             )}
             {isMatchPoint && (
@@ -167,6 +143,45 @@ export const PlayerScoreCard = ({
               </div>
             </Group>
           </div>
+          {doublesMode && (
+            <Stack gap="xs">
+              <Text size="sm" c={mutedText}>
+                Teammate lineup
+              </Text>
+              {player.teammates.map((teammate) => (
+                <Group key={`${teammate.id}-${teammate.name}`} gap="xs" align="flex-end">
+                  <TextInput
+                    defaultValue={teammate.name}
+                    spellCheck={false}
+                    maxLength={24}
+                    size="xs"
+                    flex={1}
+                    onBlur={(event: FocusEvent<HTMLInputElement>) =>
+                      onTeammateNameChange(
+                        player.id,
+                        teammate.id,
+                        event.currentTarget.value,
+                      )
+                    }
+                  />
+                  <SavedNamesMenu
+                    savedNames={savedNames}
+                    actionSize="sm"
+                    iconSize={14}
+                    tooltipLabel="Saved names"
+                    menuPosition="bottom-end"
+                    onApply={(name) =>
+                      onTeammateNameChange(player.id, teammate.id, name)
+                    }
+                    onSave={() => onSaveTeammateName(player.id, teammate.id)}
+                    onClear={() => onTeammateNameChange(player.id, teammate.id, '')}
+                    saveLabel={`Save “${teammate.name || player.name}”`}
+                    clearLabel="Clear teammate name"
+                  />
+                </Group>
+              ))}
+            </Stack>
+          )}
           <Group gap="xs" grow>
             <Button
               variant="light"

@@ -13,10 +13,13 @@ interface PlayerGridSectionProps {
   matchConfig: MatchConfig
   matchIsLive: boolean
   savedNames: string[]
+  doublesMode: boolean
   onNameChange: (playerId: PlayerId, name: string) => void
   onPointChange: (playerId: PlayerId, delta: number) => void
   onApplySavedName: (playerId: PlayerId, name: string) => void
   onSaveName: (playerId: PlayerId) => void
+  onTeammateNameChange: (playerId: PlayerId, teammateId: string, name: string) => void
+  onSaveTeammateName: (playerId: PlayerId, teammateId: string) => void
 }
 
 export const PlayerGridSection = ({
@@ -29,10 +32,13 @@ export const PlayerGridSection = ({
   matchConfig,
   matchIsLive,
   savedNames,
+  doublesMode,
   onNameChange,
   onPointChange,
   onApplySavedName,
   onSaveName,
+  onTeammateNameChange,
+  onSaveTeammateName,
 }: PlayerGridSectionProps) => (
   <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
     {players.map((player, index) => {
@@ -52,10 +58,13 @@ export const PlayerGridSection = ({
           matchConfig={matchConfig}
           matchIsLive={matchIsLive}
           savedNames={savedNames}
+          doublesMode={doublesMode}
           onNameChange={onNameChange}
           onPointChange={onPointChange}
           onApplySavedName={onApplySavedName}
           onSaveName={onSaveName}
+          onTeammateNameChange={onTeammateNameChange}
+          onSaveTeammateName={onSaveTeammateName}
         />
       )
     })}

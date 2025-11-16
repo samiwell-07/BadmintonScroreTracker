@@ -8,6 +8,7 @@ import type { MatchConfig } from './utils/match'
 import { PlayerGridSection } from './components/PlayerGridSection'
 import { MatchDetailPanels } from './components/MatchDetailPanels'
 import { ScoreOnlyOverlays } from './components/ScoreOnlyOverlays'
+import { DoublesCourtDiagram } from './components/DoublesCourtDiagram'
 
 function App() {
   const { match, history, gamesNeeded, matchIsLive, actions } = useMatchController()
@@ -22,7 +23,10 @@ function App() {
     handleSwapEnds,
     handleServerToggle,
     handleSetServer,
+    handleTeammateNameChange,
+    handleDoublesModeToggle,
     handleSavePlayerName,
+    handleSaveTeammateName,
     handleApplySavedName,
     handleClockToggle,
     pushUpdate,
@@ -97,7 +101,9 @@ function App() {
   }
 
   return (
-    <Box style={{ minHeight: '100vh', backgroundColor: pageBg, paddingInline: '0.75rem' }}>
+    <Box
+      style={{ minHeight: '100vh', backgroundColor: pageBg, paddingInline: '0.75rem' }}
+    >
       <Container size="lg" style={{ paddingTop: '2.5rem', paddingBottom: '3.5rem' }}>
         <Stack gap="lg">
           {!scoreOnlyMode && (
@@ -122,11 +128,24 @@ function App() {
             matchConfig={matchConfig}
             matchIsLive={matchIsLive}
             savedNames={match.savedNames}
+            doublesMode={match.doublesMode}
             onNameChange={handleNameChange}
             onPointChange={handlePointChange}
             onApplySavedName={handleApplySavedName}
             onSaveName={handleSavePlayerName}
+            onTeammateNameChange={handleTeammateNameChange}
+            onSaveTeammateName={handleSaveTeammateName}
           />
+
+          {match.doublesMode && (
+            <DoublesCourtDiagram
+              players={match.players}
+              server={match.server}
+              cardBg={cardBg}
+              mutedText={mutedText}
+              teammateServerMap={match.teammateServerMap}
+            />
+          )}
 
           {!scoreOnlyMode && (
             <MatchDetailPanels
@@ -139,6 +158,7 @@ function App() {
               onRaceToChange={handleRaceToChange}
               onBestOfChange={handleBestOfChange}
               onWinByTwoToggle={handleWinByTwoToggle}
+              onDoublesToggle={handleDoublesModeToggle}
               onSwapEnds={handleSwapEnds}
               onToggleServer={handleServerToggle}
               onResetGame={handleResetGame}

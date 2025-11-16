@@ -1,135 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  BEST_OF_OPTIONS,
-  DEFAULT_STATE,
   GAME_HISTORY_LIMIT,
   HISTORY_LIMIT,
   STORAGE_KEY,
-  SAVED_NAMES_LIMIT,
   getDefaultName,
+  createDefaultTeammateServerMap,
   type CompletedGame,
   type MatchState,
   type PlayerId,
 } from '../types/match'
 import { clampPoints, didWinGame } from '../utils/match'
 import { showToast } from '../utils/notifications'
-
-const createFreshClockState = () => ({
-  clockRunning: true,
-  clockStartedAt: Date.now(),
-  clockElapsedMs: 0,
-})
-
-const createDefaultState = (): MatchState => ({
-  ...DEFAULT_STATE,
-  ...createFreshClockState(),
-  players: DEFAULT_STATE.players.map((player) => ({ ...player })),
-  completedGames: [],
-  savedNames: [],
-  lastUpdated: Date.now(),
-})
-
-const getLiveElapsedMs = (state: MatchState) =>
-  state.clockElapsedMs +
-  (state.clockRunning && state.clockStartedAt
-    ? Date.now() - state.clockStartedAt
-    : 0)
-
-const upsertSavedName = (names: string[], name: string) => {
-  const lowered = name.toLowerCase()
-  const filtered = names.filter(
-    (existing) => existing.toLowerCase() !== lowered,
-  )
-  return [name, ...filtered].slice(0, SAVED_NAMES_LIMIT)
-}
-
-const readFromStorage = (): MatchState => {
-  if (typeof window === 'undefined') {
-    return createDefaultState()
-  }
-
-  const isValidBestOf = (value: unknown): value is MatchState['bestOf'] =>
-    typeof value === 'number' &&
-    BEST_OF_OPTIONS.some((option) => option === value)
-
-  try {
-    const stored = window.localStorage.getItem(STORAGE_KEY)
-    if (!stored) {
-      return createDefaultState()
-    }
-
-    const parsed = JSON.parse(stored) as Partial<MatchState>
-    const parsedBestOf = isValidBestOf(parsed.bestOf)
-      ? parsed.bestOf
-      : DEFAULT_STATE.bestOf
-    const parsedMaxPoint = parsed.maxPoint ?? DEFAULT_STATE.maxPoint
-    const parsedRaceTo = parsed.raceTo ?? DEFAULT_STATE.raceTo
-    const parsedCompletedGames = (
-      Array.isArray(parsed.completedGames)
-        ? parsed.completedGames
-        : DEFAULT_STATE.completedGames
-    )
-      .map((game, index) => ({
-        ...game,
-        number: game?.number ?? index + 1,
-        durationMs:
-          typeof game?.durationMs === 'number'
-            ? Math.max(0, game.durationMs)
-            : 0,
-      }))
-      .slice(0, GAME_HISTORY_LIMIT)
-    const parsedSavedNames = Array.isArray(parsed.savedNames)
-      ? parsed.savedNames
-          .map((name) => name?.toString().trim())
-          .filter((name): name is string => Boolean(name))
-      : DEFAULT_STATE.savedNames
-    const parsedClockRunning =
-      typeof parsed.clockRunning === 'boolean'
-        ? parsed.clockRunning
-        : DEFAULT_STATE.clockRunning
-    const parsedClockElapsed = Math.max(
-      0,
-      typeof parsed.clockElapsedMs === 'number'
-        ? parsed.clockElapsedMs
-        : DEFAULT_STATE.clockElapsedMs,
-    )
-    const parsedClockStartedAt =
-      typeof parsed.clockStartedAt === 'number'
-        ? parsed.clockStartedAt
-        : parsedClockRunning
-          ? Date.now()
-          : null
-
-    return {
-      ...createDefaultState(),
-      ...parsed,
-      players:
-        parsed.players?.map((player, index) => ({
-          ...DEFAULT_STATE.players[index],
-          ...player,
-        })) ?? DEFAULT_STATE.players.map((player) => ({ ...player })),
-      matchWinner: parsed.matchWinner ?? null,
-      server: parsed.server ?? DEFAULT_STATE.server,
-      raceTo: Math.min(parsedRaceTo, parsedMaxPoint),
-      maxPoint: parsedMaxPoint,
-      winByTwo: parsed.winByTwo ?? DEFAULT_STATE.winByTwo,
-      bestOf: parsedBestOf,
-      completedGames: parsedCompletedGames,
-      clockRunning: parsedClockRunning,
-      clockElapsedMs: parsedClockElapsed,
-      clockStartedAt: parsedClockStartedAt,
-      savedNames: parsedSavedNames.slice(0, SAVED_NAMES_LIMIT),
-    }
-  } catch (error) {
-    console.warn('Failed to parse stored match state', error)
-    return createDefaultState()
-  }
-}
-
-const createGameId = () =>
-  typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(16).slice(2)}`
+import { createFreshClockState, getLiveElapsedMs } from './matchController/clock'
+import { rotateRightCourtTeammate } from './matchController/teammates'
+import { readFromStorage } from './matchController/state'
+import { upsertSavedName } from './matchController/savedNames'
+import { createGameId } from './matchController/ids'
 
 export const useMatchController = () => {
   const [match, setMatch] = useState<MatchState>(readFromStorage)
@@ -143,17 +29,12 @@ export const useMatchController = () => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(match))
   }, [match])
 
-  const gamesNeeded = useMemo(
-    () => Math.ceil(match.bestOf / 2),
-    [match.bestOf],
-  )
+  const gamesNeeded = useMemo(() => Math.ceil(match.bestOf / 2), [match.bestOf])
 
   const pushUpdate = (updater: (state: MatchState) => MatchState) => {
     setMatch((previous) => {
       const next = updater(previous)
-      setHistory((prevHistory) =>
-        [previous, ...prevHistory].slice(0, HISTORY_LIMIT),
-      )
+      setHistory((prevHistory) => [previous, ...prevHistory].slice(0, HISTORY_LIMIT))
       return { ...next, lastUpdated: Date.now() }
     })
   }
@@ -179,13 +60,21 @@ export const useMatchController = () => {
     }
 
     pushUpdate((state) => {
+      const wasServing = state.server === playerId
+      const nextServerMap = { ...state.teammateServerMap }
+
       const players = state.players.map((player) => {
         if (player.id !== playerId) {
-          return { ...player }
+          return {
+            ...player,
+            teammates: player.teammates.map((mate) => ({ ...mate })),
+          }
         }
 
         const nextPoints = clampPoints(player.points + delta, state.maxPoint)
-        return { ...player, points: nextPoints }
+        const nextTeammates = player.teammates.map((mate) => ({ ...mate }))
+
+        return { ...player, points: nextPoints, teammates: nextTeammates }
       })
 
       if (delta < 0) {
@@ -193,6 +82,15 @@ export const useMatchController = () => {
       }
 
       const scorer = players.find((player) => player.id === playerId)!
+
+      if (!nextServerMap[playerId] && scorer.teammates.length > 0) {
+        nextServerMap[playerId] = scorer.teammates[0].id
+      }
+      const hasTeammates = scorer.teammates.length > 0
+      if (wasServing && hasTeammates && scorer.teammates.length > 1) {
+        rotateRightCourtTeammate(scorer, nextServerMap)
+      }
+
       const opponent = players.find((player) => player.id !== playerId)!
       const liveElapsedMs = getLiveElapsedMs(state)
 
@@ -208,21 +106,23 @@ export const useMatchController = () => {
           winnerId: playerId,
           winnerName: scorer.name,
           durationMs: liveElapsedMs,
-          scores: players.reduce<CompletedGame['scores']>((acc, player) => {
-            acc[player.id] = { name: player.name, points: player.points }
-            return acc
-          }, {} as CompletedGame['scores']),
+          scores: players.reduce<CompletedGame['scores']>(
+            (acc, player) => {
+              acc[player.id] = { name: player.name, points: player.points }
+              return acc
+            },
+            {} as CompletedGame['scores'],
+          ),
         }
 
         const updatedPlayers = players.map((player) => ({
           ...player,
           points: 0,
           games: player.id === playerId ? player.games + 1 : player.games,
+          teammates: player.teammates.map((mate) => ({ ...mate })),
         }))
 
-        const winner = updatedPlayers.find(
-          (player) => player.id === playerId,
-        )!
+        const winner = updatedPlayers.find((player) => player.id === playerId)!
         const isMatchWin = winner.games >= gamesNeeded
         const matchWinner = isMatchWin ? playerId : state.matchWinner
 
@@ -249,10 +149,16 @@ export const useMatchController = () => {
           clockRunning,
           clockStartedAt,
           clockElapsedMs,
+          teammateServerMap: nextServerMap,
         }
       }
 
-      return { ...state, players, server: playerId }
+      return {
+        ...state,
+        players,
+        server: playerId,
+        teammateServerMap: nextServerMap,
+      }
     })
   }
 
@@ -275,6 +181,7 @@ export const useMatchController = () => {
       players: state.players.map((player) => ({
         ...player,
         points: 0,
+        teammates: player.teammates.map((mate) => ({ ...mate })),
       })),
       matchWinner: state.matchWinner,
     }))
@@ -287,9 +194,11 @@ export const useMatchController = () => {
         ...player,
         points: 0,
         games: 0,
+        teammates: player.teammates.map((mate) => ({ ...mate })),
       })),
       matchWinner: null,
       server: 'playerA',
+      teammateServerMap: createDefaultTeammateServerMap(),
       ...createFreshClockState(),
     }))
   }
@@ -320,6 +229,42 @@ export const useMatchController = () => {
     }))
   }
 
+  const handleTeammateNameChange = (
+    playerId: PlayerId,
+    teammateId: string,
+    name: string,
+  ) => {
+    const trimmed = name.trim()
+
+    pushUpdate((state) => ({
+      ...state,
+      players: state.players.map((player) => {
+        if (player.id !== playerId) {
+          return {
+            ...player,
+            teammates: player.teammates.map((mate) => ({ ...mate })),
+          }
+        }
+
+        return {
+          ...player,
+          teammates: player.teammates.map((mate) =>
+            mate.id === teammateId
+              ? { ...mate, name: trimmed }
+              : { ...mate },
+          ),
+        }
+      }),
+    }))
+  }
+
+  const handleDoublesModeToggle = (enabled: boolean) => {
+    pushUpdate((state) => ({
+      ...state,
+      doublesMode: enabled,
+    }))
+  }
+
   const handleSavePlayerName = (playerId: PlayerId) => {
     const player = match.players.find((entry) => entry.id === playerId)
     if (!player) {
@@ -327,6 +272,31 @@ export const useMatchController = () => {
     }
 
     const trimmed = player.name.trim()
+    if (!trimmed) {
+      showToast({ title: 'Cannot save empty name', status: 'warning' })
+      return
+    }
+
+    pushUpdate((state) => ({
+      ...state,
+      savedNames: upsertSavedName(state.savedNames, trimmed),
+    }))
+
+    showToast({ title: `Saved ${trimmed}`, status: 'success' })
+  }
+
+  const handleSaveTeammateName = (playerId: PlayerId, teammateId: string) => {
+    const player = match.players.find((entry) => entry.id === playerId)
+    if (!player) {
+      return
+    }
+
+    const teammate = player.teammates.find((mate) => mate.id === teammateId)
+    if (!teammate) {
+      return
+    }
+
+    const trimmed = teammate.name.trim()
     if (!trimmed) {
       showToast({ title: 'Cannot save empty name', status: 'warning' })
       return
@@ -389,7 +359,10 @@ export const useMatchController = () => {
       handleSwapEnds,
       handleServerToggle,
       handleSetServer,
+      handleTeammateNameChange,
+      handleDoublesModeToggle,
       handleSavePlayerName,
+      handleSaveTeammateName,
       handleApplySavedName,
       handleClockToggle,
       pushUpdate,

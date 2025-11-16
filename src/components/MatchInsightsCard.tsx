@@ -56,7 +56,8 @@ export const MatchInsightsCard = ({
       </Group>
       <Divider />
       <Text c={mutedText}>
-        Tip: add the page to your home screen for a fast, offline-ready scoreboard during practice or tournaments.
+        Tip: add the page to your home screen for a fast, offline-ready scoreboard during
+        practice or tournaments.
       </Text>
     </Stack>
   </Card>

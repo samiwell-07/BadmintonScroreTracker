@@ -1,10 +1,16 @@
 export type PlayerId = 'playerA' | 'playerB'
 
+export interface TeammateState {
+  id: string
+  name: string
+}
+
 export interface PlayerState {
   id: PlayerId
   name: string
   points: number
   games: number
+  teammates: TeammateState[]
 }
 
 export interface MatchState {
@@ -21,6 +27,8 @@ export interface MatchState {
   clockStartedAt: number | null
   clockElapsedMs: number
   savedNames: string[]
+  doublesMode: boolean
+  teammateServerMap: Record<PlayerId, string>
 }
 
 export const STORAGE_KEY = 'bst-score-state'
@@ -42,10 +50,35 @@ export interface CompletedGame {
 export const getDefaultName = (playerId: PlayerId) =>
   playerId === 'playerA' ? 'Player A' : 'Player B'
 
+export const getDefaultTeammates = (playerId: PlayerId): TeammateState[] => {
+  const baseLabel = getDefaultName(playerId)
+  return [1, 2].map((position) => ({
+    id: `${playerId}-mate-${position}`,
+    name: `${baseLabel} ${position}`,
+  }))
+}
+
+export const createDefaultTeammateServerMap = (): Record<PlayerId, string> => ({
+  playerA: getDefaultTeammates('playerA')[0].id,
+  playerB: getDefaultTeammates('playerB')[0].id,
+})
+
 export const DEFAULT_STATE: MatchState = {
   players: [
-    { id: 'playerA', name: 'Player A', points: 0, games: 0 },
-    { id: 'playerB', name: 'Player B', points: 0, games: 0 },
+    {
+      id: 'playerA',
+      name: 'Player A',
+      points: 0,
+      games: 0,
+      teammates: getDefaultTeammates('playerA'),
+    },
+    {
+      id: 'playerB',
+      name: 'Player B',
+      points: 0,
+      games: 0,
+      teammates: getDefaultTeammates('playerB'),
+    },
   ],
   raceTo: 21,
   maxPoint: 30,
@@ -59,4 +92,6 @@ export const DEFAULT_STATE: MatchState = {
   clockStartedAt: Date.now(),
   clockElapsedMs: 0,
   savedNames: [],
+  doublesMode: false,
+  teammateServerMap: createDefaultTeammateServerMap(),
 }

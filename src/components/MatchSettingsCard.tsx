@@ -19,6 +19,7 @@ interface MatchSettingsCardProps {
   onRaceToChange: (value: number) => void
   onBestOfChange: (value: MatchState['bestOf']) => void
   onWinByTwoToggle: (checked: boolean) => void
+  onDoublesToggle: (checked: boolean) => void
 }
 
 export const MatchSettingsCard = ({
@@ -28,6 +29,7 @@ export const MatchSettingsCard = ({
   onRaceToChange,
   onBestOfChange,
   onWinByTwoToggle,
+  onDoublesToggle,
 }: MatchSettingsCardProps) => (
   <Card mt="lg" withBorder radius="lg" p="xl" style={{ backgroundColor: cardBg }}>
     <Stack gap="lg">
@@ -74,6 +76,18 @@ export const MatchSettingsCard = ({
               onWinByTwoToggle(event.currentTarget.checked)
             }
             label={match.winByTwo ? 'Enabled' : 'Disabled'}
+          />
+        </Stack>
+        <Stack gap="xs">
+          <Text size="sm" c={mutedText}>
+            Doubles contributions
+          </Text>
+          <Switch
+            checked={match.doublesMode}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              onDoublesToggle(event.currentTarget.checked)
+            }
+            label={match.doublesMode ? 'Tracking' : 'Hidden'}
           />
         </Stack>
       </SimpleGrid>

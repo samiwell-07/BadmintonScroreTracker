@@ -14,6 +14,7 @@ interface MatchDetailPanelsProps {
   onRaceToChange: (value: number) => void
   onBestOfChange: (bestOf: MatchState['bestOf']) => void
   onWinByTwoToggle: (checked: boolean) => void
+  onDoublesToggle: (checked: boolean) => void
   onSwapEnds: () => void
   onToggleServer: () => void
   onResetGame: () => void
@@ -31,6 +32,7 @@ export const MatchDetailPanels = ({
   onRaceToChange,
   onBestOfChange,
   onWinByTwoToggle,
+  onDoublesToggle,
   onSwapEnds,
   onToggleServer,
   onResetGame,
@@ -45,6 +47,7 @@ export const MatchDetailPanels = ({
       onRaceToChange={onRaceToChange}
       onBestOfChange={onBestOfChange}
       onWinByTwoToggle={onWinByTwoToggle}
+      onDoublesToggle={onDoublesToggle}
     />
 
     <MatchControlsCard
