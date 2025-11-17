@@ -20,6 +20,7 @@ interface MatchDetailPanelsProps {
   onResetGame: () => void
   onResetMatch: () => void
   onToggleClock: () => void
+  onClearHistory: () => void
 }
 
 export const MatchDetailPanels = ({
@@ -38,6 +39,7 @@ export const MatchDetailPanels = ({
   onResetGame,
   onResetMatch,
   onToggleClock,
+  onClearHistory,
 }: MatchDetailPanelsProps) => (
   <>
     <MatchSettingsCard
@@ -69,6 +71,11 @@ export const MatchDetailPanels = ({
       onToggleClock={onToggleClock}
     />
 
-    <GameHistoryCard cardBg={cardBg} mutedText={mutedText} games={match.completedGames} />
+    <GameHistoryCard
+      cardBg={cardBg}
+      mutedText={mutedText}
+      games={match.completedGames}
+      onClearHistory={onClearHistory}
+    />
   </>
 )

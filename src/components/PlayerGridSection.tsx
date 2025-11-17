@@ -20,6 +20,7 @@ interface PlayerGridSectionProps {
   onSaveName: (playerId: PlayerId) => void
   onTeammateNameChange: (playerId: PlayerId, teammateId: string, name: string) => void
   onSaveTeammateName: (playerId: PlayerId, teammateId: string) => void
+  onSwapTeammates: (playerId: PlayerId) => void
 }
 
 export const PlayerGridSection = ({
@@ -39,6 +40,7 @@ export const PlayerGridSection = ({
   onSaveName,
   onTeammateNameChange,
   onSaveTeammateName,
+  onSwapTeammates,
 }: PlayerGridSectionProps) => (
   <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
     {players.map((player, index) => {
@@ -65,6 +67,7 @@ export const PlayerGridSection = ({
           onSaveName={onSaveName}
           onTeammateNameChange={onTeammateNameChange}
           onSaveTeammateName={onSaveTeammateName}
+          onSwapTeammates={onSwapTeammates}
         />
       )
     })}

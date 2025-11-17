@@ -23,6 +23,7 @@ interface PlayerScoreCardProps {
   onSaveName: (playerId: PlayerId) => void
   onTeammateNameChange: (playerId: PlayerId, teammateId: string, name: string) => void
   onSaveTeammateName: (playerId: PlayerId, teammateId: string) => void
+  onSwapTeammates: (playerId: PlayerId) => void
 }
 
 export const PlayerScoreCard = ({
@@ -43,6 +44,7 @@ export const PlayerScoreCard = ({
   onSaveName,
   onTeammateNameChange,
   onSaveTeammateName,
+  onSwapTeammates,
 }: PlayerScoreCardProps) => {
   const theme = useMantineTheme()
   const isGamePoint = didWinGame(player.points + 1, opponent.points, matchConfig)
@@ -145,9 +147,21 @@ export const PlayerScoreCard = ({
           </div>
           {doublesMode && (
             <Stack gap="xs">
-              <Text size="sm" c={mutedText}>
-                Teammate lineup
-              </Text>
+              <Group justify="space-between" align="center">
+                <Text size="sm" c={mutedText}>
+                  Teammate lineup
+                </Text>
+                {player.teammates.length > 1 && (
+                  <Button
+                    size="xs"
+                    variant="subtle"
+                    color="teal"
+                    onClick={() => onSwapTeammates(player.id)}
+                  >
+                    Switch positions
+                  </Button>
+                )}
+              </Group>
               {player.teammates.map((teammate) => (
                 <Group key={`${teammate.id}-${teammate.name}`} gap="xs" align="flex-end">
                   <TextInput

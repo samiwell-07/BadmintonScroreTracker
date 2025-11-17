@@ -9,11 +9,13 @@ import { PlayerGridSection } from './components/PlayerGridSection'
 import { MatchDetailPanels } from './components/MatchDetailPanels'
 import { ScoreOnlyOverlays } from './components/ScoreOnlyOverlays'
 import { DoublesCourtDiagram } from './components/DoublesCourtDiagram'
+import { SimpleScoreView } from './components/SimpleScoreView'
 
 function App() {
   const { match, history, gamesNeeded, matchIsLive, actions } = useMatchController()
   const { colorScheme, pageBg, cardBg, mutedText, toggleColorMode } = useThemeColors()
   const [scoreOnlyMode, setScoreOnlyMode] = useState(false)
+  const [simpleScoreMode, setSimpleScoreMode] = useState(false)
   const {
     handleNameChange,
     handlePointChange,
@@ -29,6 +31,8 @@ function App() {
     handleSaveTeammateName,
     handleApplySavedName,
     handleClockToggle,
+    handleSwapTeammates,
+    handleClearHistory,
     pushUpdate,
   } = actions
 
@@ -38,7 +42,23 @@ function App() {
     winByTwo: match.winByTwo,
   }
 
-  const handleScoreOnlyToggle = () => setScoreOnlyMode((previous) => !previous)
+  const handleScoreOnlyToggle = () =>
+    setScoreOnlyMode((previous) => {
+      const next = !previous
+      if (next) {
+        setSimpleScoreMode(false)
+      }
+      return next
+    })
+
+  const handleSimpleScoreToggle = () =>
+    setSimpleScoreMode((previous) => {
+      const next = !previous
+      if (next) {
+        setScoreOnlyMode(false)
+      }
+      return next
+    })
 
   const [displayElapsedMs, setDisplayElapsedMs] = useState(match.clockElapsedMs)
 
@@ -100,6 +120,25 @@ function App() {
     }))
   }
 
+  if (simpleScoreMode) {
+    return (
+      <Box
+        style={{ minHeight: '100vh', backgroundColor: pageBg, paddingInline: '0.75rem' }}
+      >
+        <Container size="md" style={{ paddingTop: '2.5rem', paddingBottom: '3.5rem' }}>
+          <SimpleScoreView
+            players={match.players}
+            cardBg={cardBg}
+            mutedText={mutedText}
+            matchIsLive={matchIsLive}
+            onPointChange={handlePointChange}
+            onExit={() => setSimpleScoreMode(false)}
+          />
+        </Container>
+      </Box>
+    )
+  }
+
   return (
     <Box
       style={{ minHeight: '100vh', backgroundColor: pageBg, paddingInline: '0.75rem' }}
@@ -116,6 +155,8 @@ function App() {
               canUndo={history.length > 0}
               scoreOnlyMode={scoreOnlyMode}
               onToggleScoreOnly={handleScoreOnlyToggle}
+              simpleScoreMode={simpleScoreMode}
+              onToggleSimpleScore={handleSimpleScoreToggle}
             />
           )}
           <PlayerGridSection
@@ -135,6 +176,7 @@ function App() {
             onSaveName={handleSavePlayerName}
             onTeammateNameChange={handleTeammateNameChange}
             onSaveTeammateName={handleSaveTeammateName}
+            onSwapTeammates={handleSwapTeammates}
           />
 
           {match.doublesMode && (
@@ -164,11 +206,12 @@ function App() {
               onResetGame={handleResetGame}
               onResetMatch={handleResetMatch}
               onToggleClock={handleClockToggle}
+              onClearHistory={handleClearHistory}
             />
           )}
 
           <ScoreOnlyOverlays
-            active={scoreOnlyMode}
+            active={scoreOnlyMode && !simpleScoreMode}
             mutedText={mutedText}
             players={match.players}
             server={match.server}

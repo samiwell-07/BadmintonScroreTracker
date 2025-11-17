@@ -127,7 +127,7 @@ export const useMatchController = () => {
         const matchWinner = isMatchWin ? playerId : state.matchWinner
 
         if (isMatchWin) {
-          clockElapsedMs = liveElapsedMs
+          clockElapsedMs = 0
           clockRunning = false
           clockStartedAt = null
         }
@@ -201,6 +201,59 @@ export const useMatchController = () => {
       teammateServerMap: createDefaultTeammateServerMap(),
       ...createFreshClockState(),
     }))
+  }
+
+  const handleClearHistory = () => {
+    if (match.completedGames.length === 0) {
+      showToast({ title: 'Nothing to erase', status: 'info' })
+      return
+    }
+
+    pushUpdate((state) => ({
+      ...state,
+      completedGames: [],
+    }))
+
+    showToast({ title: 'History cleared', status: 'success' })
+  }
+
+  const handleSwapTeammates = (playerId: PlayerId) => {
+    pushUpdate((state) => {
+      const players = state.players.map((player) => {
+        if (player.id !== playerId) {
+          return {
+            ...player,
+            teammates: player.teammates.map((mate) => ({ ...mate })),
+          }
+        }
+
+        if (player.teammates.length < 2) {
+          return {
+            ...player,
+            teammates: player.teammates.map((mate) => ({ ...mate })),
+          }
+        }
+
+        const cloned = player.teammates.map((mate) => ({ ...mate }))
+        const [first, second, ...rest] = cloned
+        return {
+          ...player,
+          teammates: [second, first, ...rest],
+        }
+      })
+
+      const updatedPlayer = players.find((entry) => entry.id === playerId)
+      const nextServerMap = { ...state.teammateServerMap }
+      if (updatedPlayer && updatedPlayer.teammates.length > 0) {
+        nextServerMap[playerId] = updatedPlayer.teammates[0].id
+      }
+
+      return {
+        ...state,
+        players,
+        teammateServerMap: nextServerMap,
+      }
+    })
   }
 
   const handleSwapEnds = () => {
@@ -357,6 +410,8 @@ export const useMatchController = () => {
       handleResetGame,
       handleResetMatch,
       handleSwapEnds,
+      handleSwapTeammates,
+      handleClearHistory,
       handleServerToggle,
       handleSetServer,
       handleTeammateNameChange,

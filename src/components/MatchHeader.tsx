@@ -20,6 +20,8 @@ interface MatchHeaderProps {
   canUndo: boolean
   scoreOnlyMode: boolean
   onToggleScoreOnly: () => void
+  simpleScoreMode: boolean
+  onToggleSimpleScore: () => void
 }
 
 export const MatchHeader = ({
@@ -31,6 +33,8 @@ export const MatchHeader = ({
   canUndo,
   scoreOnlyMode,
   onToggleScoreOnly,
+  simpleScoreMode,
+  onToggleSimpleScore,
 }: MatchHeaderProps) => (
   <Card withBorder radius="lg" p="xl" style={{ backgroundColor: cardBg }} shadow="lg">
     <Stack gap="md">
@@ -43,16 +47,27 @@ export const MatchHeader = ({
           
           </Text>
         </div>
-        <Stack gap="xs" align="flex-end" style={{ minWidth: '12rem' }}>
-          <Button
-            w="100%"
-            variant={scoreOnlyMode ? 'filled' : 'light'}
-            color={scoreOnlyMode ? 'teal' : 'gray'}
-            onClick={onToggleScoreOnly}
-            aria-pressed={scoreOnlyMode}
-          >
-            {scoreOnlyMode ? 'Show full view' : 'Score-only view'}
-          </Button>
+        <Stack gap="xs" align="stretch" style={{ minWidth: '12rem', width: '100%' }}>
+          <Group gap="xs" grow wrap="wrap">
+            <Button
+              variant={scoreOnlyMode ? 'filled' : 'light'}
+              color={scoreOnlyMode ? 'teal' : 'gray'}
+              onClick={onToggleScoreOnly}
+              aria-pressed={scoreOnlyMode}
+              style={{ flex: 1, minWidth: '8rem' }}
+            >
+              {scoreOnlyMode ? 'Show full view' : 'Score-only view'}
+            </Button>
+            <Button
+              variant={simpleScoreMode ? 'filled' : 'light'}
+              color={simpleScoreMode ? 'teal' : 'gray'}
+              onClick={onToggleSimpleScore}
+              aria-pressed={simpleScoreMode}
+              style={{ flex: 1, minWidth: '8rem' }}
+            >
+              {simpleScoreMode ? 'Show full view' : 'Simple score view'}
+            </Button>
+          </Group>
           <Group gap="sm" wrap="wrap" justify="flex-end">
             <Tooltip label="Swap light / dark mode">
               <ActionIcon

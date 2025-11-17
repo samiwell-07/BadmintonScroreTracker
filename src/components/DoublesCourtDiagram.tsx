@@ -12,14 +12,10 @@ interface DoublesCourtDiagramProps {
 type CourtSide = 'left' | 'right'
 type Lane = 'top' | 'bottom'
 
-const getServiceBox = (points: number): CourtSide => (points % 2 === 0 ? 'right' : 'left')
+const COURT_HEIGHT = 280
+const LANE_VERTICAL_PADDING = 18
 
-const BOX_LABEL: Record<CourtSide | Lane, string> = {
-  left: 'left service court',
-  right: 'right service court',
-  top: 'upper service box',
-  bottom: 'lower service box',
-}
+const getServiceBox = (points: number): CourtSide => (points % 2 === 0 ? 'right' : 'left')
 
 const getLaneForSide = (serviceBox: CourtSide, isLeftSide: boolean): Lane => {
   if (isLeftSide) {
@@ -66,7 +62,6 @@ export const DoublesCourtDiagram = ({
   }
 
   const serverTeam = players.find((player) => player.id === server) ?? leftTeam
-  const receiverTeam = serverTeam.id === leftTeam.id ? rightTeam : leftTeam
   const serverOnLeft = serverTeam.id === leftTeam.id
 
   const serverBox = getServiceBox(serverTeam.points)
@@ -87,135 +82,113 @@ export const DoublesCourtDiagram = ({
 
   return (
     <Paper withBorder radius="lg" p="lg" style={{ backgroundColor: cardBg }}>
-      <Stack gap="md">
-        <Stack gap={4}>
-          <Text size="sm" fw={600} c={mutedText}>
-            Doubles service guide
-          </Text>
-          <Text size="xs" c={mutedText}>
-            {serverTeam.name} serves from the {BOX_LABEL[serverBox]} (even scores from the
-            right court, odd from the left) and must deliver the shuttle diagonally into{' '}
-            {receiverTeam.name}
-            {"'"}s highlighted service box, as per BWF doubles service rules.
-          </Text>
-        </Stack>
-        <Stack gap="xs">
-          <Box
-            style={{
-              position: 'relative',
-              border: '2px solid #adb5bd',
-              borderRadius: '0.75rem',
-              height: 180,
-              overflow: 'hidden',
-            }}
-          >
-            <Box style={{ display: 'flex', height: '100%' }}>
-              {columns.map((column, columnIndex) => (
-                <Box
-                  key={column.team.id}
-                  style={{
-                    flex: 1,
-                    display: 'grid',
-                    gridTemplateRows: 'repeat(2, 1fr)',
-                    borderRight:
-                      columnIndex === 0 ? '1px solid rgba(173, 181, 189, 0.7)' : 'none',
-                  }}
-                >
-                  {(['top', 'bottom'] as Lane[]).map((lane) => {
-                    const isServerLane =
-                      column.role === 'server' && lane === column.highlightLane
-                    const isReceiverLane =
-                      column.role === 'receiver' && lane === column.highlightLane
+      <Stack gap="xs">
+        <Box
+          style={{
+            position: 'relative',
+            border: '2px solid #adb5bd',
+            borderRadius: '0.75rem',
+            height: COURT_HEIGHT,
+            overflow: 'hidden',
+          }}
+        >
+          <Box style={{ display: 'flex', height: '100%' }}>
+            {columns.map((column, columnIndex) => (
+              <Box
+                key={column.team.id}
+                style={{
+                  flex: 1,
+                  display: 'grid',
+                  gridTemplateRows: 'repeat(2, 1fr)',
+                  borderRight:
+                    columnIndex === 0 ? '1px solid rgba(173, 181, 189, 0.7)' : 'none',
+                }}
+              >
+                {(['top', 'bottom'] as Lane[]).map((lane) => {
+                  const isServerLane =
+                    column.role === 'server' && lane === column.highlightLane
+                  const isReceiverLane =
+                    column.role === 'receiver' && lane === column.highlightLane
 
-                    const laneAssignments = getLaneAssignments(
-                      column.team,
-                      teammateServerMap,
-                      column.team.id === leftTeam.id,
-                    )
-                    const laneMate =
-                      (lane === 'top' ? laneAssignments.top : laneAssignments.bottom) ??
-                      null
-                    const displayName =
-                      laneMate && laneMate.name.length > 0
-                        ? laneMate.name
-                        : column.team.name
-                    return (
-                      <Box
-                        key={`${column.team.id}-${lane}`}
-                        style={{
-                          borderBottom: lane === 'top' ? '1px solid #ced4da' : 'none',
-                          backgroundColor: isServerLane
-                            ? 'rgba(18, 184, 134, 0.2)'
-                            : isReceiverLane
-                              ? 'rgba(134, 142, 150, 0.25)'
-                              : 'transparent',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          position: 'relative',
-                        }}
-                      >
-                        <Stack gap={2} align="center">
-                          <Box
+                  const laneAssignments = getLaneAssignments(
+                    column.team,
+                    teammateServerMap,
+                    column.team.id === leftTeam.id,
+                  )
+                  const laneMate =
+                    (lane === 'top' ? laneAssignments.top : laneAssignments.bottom) ??
+                    null
+                  const displayName =
+                    laneMate && laneMate.name.length > 0
+                      ? laneMate.name
+                      : column.team.name
+                  return (
+                    <Box
+                      key={`${column.team.id}-${lane}`}
+                      style={{
+                        borderBottom: lane === 'top' ? '1px solid #ced4da' : 'none',
+                        backgroundColor: isServerLane
+                          ? 'rgba(18, 184, 134, 0.2)'
+                          : isReceiverLane
+                            ? 'rgba(134, 142, 150, 0.25)'
+                            : 'transparent',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        position: 'relative',
+                        paddingBlock: LANE_VERTICAL_PADDING,
+                      }}
+                    >
+                      <Stack gap={2} align="center">
+                        <Box
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 6,
+                            width: '100%',
+                          }}
+                        >
+                          <Text
+                            size="xs"
+                            fw={700}
+                            c={isServerLane ? 'teal' : mutedText}
                             style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: 6,
-                              width: '100%',
+                              letterSpacing: 0.2,
+                              textAlign: 'center',
+                              flex: 1,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
                             }}
                           >
-                            <Text
-                              size="xs"
-                              fw={700}
-                              c={isServerLane ? 'teal' : 'gray.7'}
-                              style={{
-                                letterSpacing: 0.2,
-                                textAlign: 'center',
-                                flex: 1,
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                              }}
-                            >
-                              {displayName}
-                            </Text>
-                          </Box>
-                          {(isServerLane || isReceiverLane) && (
-                            <Text size="8px" c={isServerLane ? 'teal' : 'gray.7'}>
-                              {isServerLane ? 'SERVE' : 'RECV'}
-                            </Text>
-                          )}
-                        </Stack>
-                      </Box>
-                    )
-                  })}
-                </Box>
-              ))}
-            </Box>
-            {/* Net */}
-            <Box
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: '50%',
-                width: 8,
-                height: '100%',
-                transform: 'translateX(-50%)',
-                backgroundColor: '#868e96',
-              }}
-            />
+                            {displayName}
+                          </Text>
+                        </Box>
+                        {(isServerLane || isReceiverLane) && (
+                          <Text size="8px" c={isServerLane ? 'teal' : mutedText}>
+                            {isServerLane ? 'SERVE' : 'RECV'}
+                          </Text>
+                        )}
+                      </Stack>
+                    </Box>
+                  )
+                })}
+              </Box>
+            ))}
           </Box>
-          {columns.map((column) => (
-            <Text key={column.team.id} size="xs" c={mutedText}>
-              {column.role === 'server'
-                ? `${column.team.name} serves from the ${BOX_LABEL[column.highlightLane]} on the ${
-                    column.team.id === leftTeam.id ? 'left' : 'right'
-                  } side.`
-                : `${column.team.name} positions in the ${BOX_LABEL[column.highlightLane]} to receive diagonally.`}
-            </Text>
-          ))}
-        </Stack>
+          <Box
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: '50%',
+              width: 8,
+              height: '100%',
+              transform: 'translateX(-50%)',
+              backgroundColor: '#868e96',
+            }}
+          />
+        </Box>
       </Stack>
     </Paper>
   )
