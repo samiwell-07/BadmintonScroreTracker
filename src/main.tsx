@@ -6,6 +6,7 @@ import App from './App.tsx'
 import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
 import './index.css'
+import { reportWebVitals } from './reportWebVitals'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -16,3 +17,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </MantineProvider>
   </React.StrictMode>,
 )
+
+reportWebVitals()

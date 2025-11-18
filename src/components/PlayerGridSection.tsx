@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react'
 import { Paper, SimpleGrid, Stack, Text } from '@mantine/core'
 import type { PlayerId, PlayerState } from '../types/match'
 import type { MatchConfig } from '../utils/match'
@@ -25,7 +26,7 @@ interface PlayerGridSectionProps {
   onSwapTeammates: (playerId: PlayerId) => void
 }
 
-export const PlayerGridSection = ({
+const PlayerGridSectionComponent = ({
   players,
   cardBg,
   mutedText,
@@ -45,10 +46,13 @@ export const PlayerGridSection = ({
   onSaveTeammateName,
   onSwapTeammates,
 }: PlayerGridSectionProps) => {
-  const rotationSummary =
-    doublesMode && players.length >= 2
-      ? getRotationSummary(players, server, teammateServerMap)
-      : null
+  const rotationSummary = useMemo(
+    () =>
+      doublesMode && players.length >= 2
+        ? getRotationSummary(players, server, teammateServerMap)
+        : null,
+    [doublesMode, players, server, teammateServerMap],
+  )
 
   return (
     <Stack gap="md">
@@ -101,3 +105,6 @@ export const PlayerGridSection = ({
     </Stack>
   )
 }
+
+export const PlayerGridSection = memo(PlayerGridSectionComponent)
+PlayerGridSection.displayName = 'PlayerGridSection'

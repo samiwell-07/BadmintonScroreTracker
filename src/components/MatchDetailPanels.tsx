@@ -1,8 +1,20 @@
+import { memo, lazy, Suspense } from 'react'
 import type { MatchState } from '../types/match'
+import type { Translations } from '../i18n/translations'
 import { MatchSettingsCard } from './MatchSettingsCard'
 import { MatchControlsCard } from './MatchControlsCard'
-import { MatchInsightsCard } from './MatchInsightsCard'
-import { GameHistoryCard } from './GameHistoryCard'
+
+const MatchInsightsCardLazy = lazy(() =>
+  import('./MatchInsightsCard').then(({ MatchInsightsCard }) => ({
+    default: MatchInsightsCard,
+  })),
+)
+
+const GameHistoryCardLazy = lazy(() =>
+  import('./GameHistoryCard').then(({ GameHistoryCard }) => ({
+    default: GameHistoryCard,
+  })),
+)
 
 interface MatchDetailPanelsProps {
   cardBg: string
@@ -21,9 +33,10 @@ interface MatchDetailPanelsProps {
   onResetMatch: () => void
   onToggleClock: () => void
   onClearHistory: () => void
+  t: Translations
 }
 
-export const MatchDetailPanels = ({
+const MatchDetailPanelsComponent = ({
   cardBg,
   mutedText,
   match,
@@ -40,6 +53,7 @@ export const MatchDetailPanels = ({
   onResetMatch,
   onToggleClock,
   onClearHistory,
+  t,
 }: MatchDetailPanelsProps) => (
   <>
     <MatchSettingsCard
@@ -58,24 +72,32 @@ export const MatchDetailPanels = ({
       onToggleServer={onToggleServer}
       onResetGame={onResetGame}
       onResetMatch={onResetMatch}
+      t={t}
     />
 
-    <MatchInsightsCard
-      cardBg={cardBg}
-      mutedText={mutedText}
-      match={match}
-      gamesNeeded={gamesNeeded}
-      matchIsLive={matchIsLive}
-      elapsedMs={elapsedMs}
-      clockRunning={match.clockRunning}
-      onToggleClock={onToggleClock}
-    />
+    <Suspense fallback={null}>
+      <MatchInsightsCardLazy
+        cardBg={cardBg}
+        mutedText={mutedText}
+        match={match}
+        gamesNeeded={gamesNeeded}
+        matchIsLive={matchIsLive}
+        elapsedMs={elapsedMs}
+        clockRunning={match.clockRunning}
+        onToggleClock={onToggleClock}
+      />
+    </Suspense>
 
-    <GameHistoryCard
-      cardBg={cardBg}
-      mutedText={mutedText}
-      games={match.completedGames}
-      onClearHistory={onClearHistory}
-    />
+    <Suspense fallback={null}>
+      <GameHistoryCardLazy
+        cardBg={cardBg}
+        mutedText={mutedText}
+        games={match.completedGames}
+        onClearHistory={onClearHistory}
+      />
+    </Suspense>
   </>
 )
+
+export const MatchDetailPanels = memo(MatchDetailPanelsComponent)
+MatchDetailPanels.displayName = 'MatchDetailPanels'

@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from 'react'
 import { Affix, Button, Group, Paper, Stack, Text } from '@mantine/core'
 import type { PlayerId, PlayerState } from '../types/match'
 import { getRotationSummary } from '../utils/doublesRotation'
@@ -25,14 +26,22 @@ export const ScoreOnlyOverlays = ({
   onSetServer,
   onToggleServer,
 }: ScoreOnlyOverlaysProps) => {
+  const rotationSummary = useMemo(
+    () =>
+      doublesMode && players.length >= 2
+        ? getRotationSummary(players, server, teammateServerMap)
+        : null,
+    [doublesMode, players, server, teammateServerMap],
+  )
+
+  const getServerHandler = useCallback(
+    (playerId: PlayerId) => () => onSetServer(playerId),
+    [onSetServer],
+  )
+
   if (!active) {
     return null
   }
-
-  const rotationSummary =
-    doublesMode && players.length >= 2
-      ? getRotationSummary(players, server, teammateServerMap)
-      : null
 
   return (
     <>
@@ -68,7 +77,7 @@ export const ScoreOnlyOverlays = ({
                   size="sm"
                   variant={isCurrentServer ? 'filled' : 'light'}
                   color={isCurrentServer ? 'cyan' : 'gray'}
-                  onClick={() => onSetServer(player.id)}
+                  onClick={getServerHandler(player.id)}
                 >
                   {player.name}
                 </Button>

@@ -1,22 +1,101 @@
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react'
 import { Box, Container, Stack } from '@mantine/core'
 import { MatchHeader } from './components/MatchHeader'
+import { PlayerGridSection } from './components/PlayerGridSection'
+import { ScoreOnlyOverlays } from './components/ScoreOnlyOverlays'
 import { useMatchController } from './hooks/useMatchController'
 import { useThemeColors } from './hooks/useThemeColors'
 import type { MatchState } from './types/match'
 import type { MatchConfig } from './utils/match'
-import { PlayerGridSection } from './components/PlayerGridSection'
-import { MatchDetailPanels } from './components/MatchDetailPanels'
-import { ScoreOnlyOverlays } from './components/ScoreOnlyOverlays'
-import { DoublesCourtDiagram } from './components/DoublesCourtDiagram'
-import { SimpleScoreView } from './components/SimpleScoreView'
+import { translations, type Language } from './i18n/translations'
+const STORAGE_KEYS = {
+  scoreOnly: 'scoreOnlyMode',
+  simpleScore: 'simpleScoreMode',
+  language: 'bst-language',
+} as const
+
+const readStoredBoolean = (key: string, fallback = false) => {
+  if (typeof window === 'undefined') return fallback
+  try {
+    const raw = window.localStorage.getItem(key)
+    if (raw === 'true') return true
+    if (raw === 'false') return false
+    return fallback
+  } catch {
+    return fallback
+  }
+}
+
+const readStoredLanguage = () => {
+  if (typeof window === 'undefined') return 'en'
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEYS.language)
+    if (raw === 'en' || raw === 'fr') {
+      return raw
+    }
+  } catch {
+    // ignore
+  }
+  if (typeof navigator !== 'undefined') {
+    return navigator.language.toLowerCase().startsWith('fr') ? 'fr' : 'en'
+  }
+  return 'en'
+}
+
+const useDebouncedBooleanStorage = (key: string, value: boolean, delay = 200) => {
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const handle = window.setTimeout(() => {
+      try {
+        window.localStorage.setItem(key, value ? 'true' : 'false')
+      } catch {
+        /* ignore storage issues */
+      }
+    }, delay)
+    return () => window.clearTimeout(handle)
+  }, [key, value, delay])
+}
+
+const useDebouncedStringStorage = (key: string, value: string, delay = 200) => {
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const handle = window.setTimeout(() => {
+      try {
+        window.localStorage.setItem(key, value)
+      } catch {
+        /* ignore storage issues */
+      }
+    }, delay)
+    return () => window.clearTimeout(handle)
+  }, [key, value, delay])
+}
+
+const MatchDetailPanels = lazy(() =>
+  import('./components/MatchDetailPanels').then(({ MatchDetailPanels }) => ({
+    default: MatchDetailPanels,
+  })),
+)
+const DoublesCourtDiagram = lazy(() =>
+  import('./components/DoublesCourtDiagram').then(({ DoublesCourtDiagram }) => ({
+    default: DoublesCourtDiagram,
+  })),
+)
+const SimpleScoreView = lazy(() =>
+  import('./components/SimpleScoreView').then(({ SimpleScoreView }) => ({
+    default: SimpleScoreView,
+  })),
+)
 
 function App() {
   const { match, history, gamesNeeded, matchIsLive, actions } = useMatchController()
   const { colorScheme, pageBg, cardBg, mutedText, toggleColorMode } = useThemeColors()
-  const [language, setLanguage] = useState<'en' | 'fr'>('en')
-  const [scoreOnlyMode, setScoreOnlyMode] = useState(false)
-  const [simpleScoreMode, setSimpleScoreMode] = useState(false)
+  const [language, setLanguage] = useState<Language>(() => readStoredLanguage())
+  const [scoreOnlyMode, setScoreOnlyMode] = useState(() =>
+    readStoredBoolean(STORAGE_KEYS.scoreOnly),
+  )
+  const [simpleScoreMode, setSimpleScoreMode] = useState(() =>
+    readStoredBoolean(STORAGE_KEYS.simpleScore),
+  )
   const {
     handleNameChange,
     handlePointChange,
@@ -37,13 +116,20 @@ function App() {
     pushUpdate,
   } = actions
 
-  const matchConfig: MatchConfig = {
-    raceTo: match.raceTo,
-    maxPoint: match.maxPoint,
-    winByTwo: match.winByTwo,
-  }
+  useDebouncedStringStorage(STORAGE_KEYS.language, language)
+  useDebouncedBooleanStorage(STORAGE_KEYS.scoreOnly, scoreOnlyMode)
+  useDebouncedBooleanStorage(STORAGE_KEYS.simpleScore, simpleScoreMode)
 
-  const handleScoreOnlyToggle = () =>
+  const matchConfig: MatchConfig = useMemo(
+    () => ({
+      raceTo: match.raceTo,
+      maxPoint: match.maxPoint,
+      winByTwo: match.winByTwo,
+    }),
+    [match.maxPoint, match.raceTo, match.winByTwo],
+  )
+
+  const handleScoreOnlyToggle = useCallback(() => {
     setScoreOnlyMode((previous) => {
       const next = !previous
       if (next) {
@@ -51,8 +137,9 @@ function App() {
       }
       return next
     })
+  }, [])
 
-  const handleSimpleScoreToggle = () =>
+  const handleSimpleScoreToggle = useCallback(() => {
     setSimpleScoreMode((previous) => {
       const next = !previous
       if (next) {
@@ -60,6 +147,13 @@ function App() {
       }
       return next
     })
+  }, [])
+
+  const handleLanguageToggle = useCallback(() => {
+    setLanguage((current) => (current === 'en' ? 'fr' : 'en'))
+  }, [])
+
+  const t = useMemo(() => translations[language], [language])
 
   const [displayElapsedMs, setDisplayElapsedMs] = useState(match.clockElapsedMs)
 
@@ -85,41 +179,50 @@ function App() {
     return () => window.clearInterval(intervalId)
   }, [match.clockRunning, match.clockStartedAt, match.clockElapsedMs])
 
-  const handleRaceToChange = (value: number) => {
-    pushUpdate((state) => ({
-      ...state,
-      raceTo:
-        !value || Number.isNaN(value) || value < 11
-          ? 21
-          : Math.min(value, state.maxPoint),
-    }))
-  }
-
-  const handleBestOfChange = (nextBestOf: MatchState['bestOf']) => {
-    pushUpdate((state) => {
-      const nextGamesNeeded = Math.ceil(nextBestOf / 2)
-      const updatedPlayers = state.players.map((player) => ({
-        ...player,
-        games: Math.min(player.games, nextGamesNeeded),
-      }))
-      const pendingWinner =
-        updatedPlayers.find((player) => player.games >= nextGamesNeeded)?.id ?? null
-
-      return {
+  const handleRaceToChange = useCallback(
+    (value: number) => {
+      pushUpdate((state) => ({
         ...state,
-        bestOf: nextBestOf,
-        players: updatedPlayers,
-        matchWinner: pendingWinner,
-      }
-    })
-  }
+        raceTo:
+          !value || Number.isNaN(value) || value < 11
+            ? 21
+            : Math.min(value, state.maxPoint),
+      }))
+    },
+    [pushUpdate],
+  )
 
-  const handleWinByTwoToggle = (checked: boolean) => {
-    pushUpdate((state) => ({
-      ...state,
-      winByTwo: checked,
-    }))
-  }
+  const handleBestOfChange = useCallback(
+    (nextBestOf: MatchState['bestOf']) => {
+      pushUpdate((state) => {
+        const nextGamesNeeded = Math.ceil(nextBestOf / 2)
+        const updatedPlayers = state.players.map((player) => ({
+          ...player,
+          games: Math.min(player.games, nextGamesNeeded),
+        }))
+        const pendingWinner =
+          updatedPlayers.find((player) => player.games >= nextGamesNeeded)?.id ?? null
+
+        return {
+          ...state,
+          bestOf: nextBestOf,
+          players: updatedPlayers,
+          matchWinner: pendingWinner,
+        }
+      })
+    },
+    [pushUpdate],
+  )
+
+  const handleWinByTwoToggle = useCallback(
+    (checked: boolean) => {
+      pushUpdate((state) => ({
+        ...state,
+        winByTwo: checked,
+      }))
+    },
+    [pushUpdate],
+  )
 
   if (simpleScoreMode) {
     return (
@@ -127,14 +230,16 @@ function App() {
         style={{ minHeight: '100vh', backgroundColor: pageBg, paddingInline: '0.75rem' }}
       >
         <Container size="md" style={{ paddingTop: '2.5rem', paddingBottom: '3.5rem' }}>
-          <SimpleScoreView
-            players={match.players}
-            cardBg={cardBg}
-            mutedText={mutedText}
-            matchIsLive={matchIsLive}
-            onPointChange={handlePointChange}
-            onExit={() => setSimpleScoreMode(false)}
-          />
+          <Suspense fallback={<Stack gap="xs">Loading score view…</Stack>}>
+            <SimpleScoreView
+              players={match.players}
+              cardBg={cardBg}
+              mutedText={mutedText}
+              matchIsLive={matchIsLive}
+              onPointChange={handlePointChange}
+              onExit={() => setSimpleScoreMode(false)}
+            />
+          </Suspense>
         </Container>
       </Box>
     )
@@ -159,9 +264,7 @@ function App() {
               simpleScoreMode={simpleScoreMode}
               onToggleSimpleScore={handleSimpleScoreToggle}
               language={language}
-              onToggleLanguage={() =>
-                setLanguage((current) => (current === 'en' ? 'fr' : 'en'))
-              }
+              onToggleLanguage={handleLanguageToggle}
             />
           )}
           <PlayerGridSection
@@ -186,34 +289,39 @@ function App() {
           />
 
           {match.doublesMode && (
-            <DoublesCourtDiagram
-              players={match.players}
-              server={match.server}
-              cardBg={cardBg}
-              mutedText={mutedText}
-              teammateServerMap={match.teammateServerMap}
-            />
+            <Suspense fallback={<Stack gap="xs">Loading doubles diagram…</Stack>}>
+              <DoublesCourtDiagram
+                players={match.players}
+                server={match.server}
+                cardBg={cardBg}
+                mutedText={mutedText}
+                teammateServerMap={match.teammateServerMap}
+              />
+            </Suspense>
           )}
 
           {!scoreOnlyMode && (
-            <MatchDetailPanels
-              cardBg={cardBg}
-              mutedText={mutedText}
-              match={match}
-              gamesNeeded={gamesNeeded}
-              matchIsLive={matchIsLive}
-              elapsedMs={displayElapsedMs}
-              onRaceToChange={handleRaceToChange}
-              onBestOfChange={handleBestOfChange}
-              onWinByTwoToggle={handleWinByTwoToggle}
-              onDoublesToggle={handleDoublesModeToggle}
-              onSwapEnds={handleSwapEnds}
-              onToggleServer={handleServerToggle}
-              onResetGame={handleResetGame}
-              onResetMatch={handleResetMatch}
-              onToggleClock={handleClockToggle}
-              onClearHistory={handleClearHistory}
-            />
+            <Suspense fallback={<Stack gap="xs">Loading match details…</Stack>}>
+              <MatchDetailPanels
+                cardBg={cardBg}
+                mutedText={mutedText}
+                match={match}
+                gamesNeeded={gamesNeeded}
+                matchIsLive={matchIsLive}
+                elapsedMs={displayElapsedMs}
+                onRaceToChange={handleRaceToChange}
+                onBestOfChange={handleBestOfChange}
+                onWinByTwoToggle={handleWinByTwoToggle}
+                onDoublesToggle={handleDoublesModeToggle}
+                onSwapEnds={handleSwapEnds}
+                onToggleServer={handleServerToggle}
+                onResetGame={handleResetGame}
+                onResetMatch={handleResetMatch}
+                onToggleClock={handleClockToggle}
+                onClearHistory={handleClearHistory}
+                 t={t}
+              />
+            </Suspense>
           )}
 
           <ScoreOnlyOverlays

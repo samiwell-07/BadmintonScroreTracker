@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Box, Paper, Stack, Text } from '@mantine/core'
 import type { PlayerId, PlayerState, TeammateState } from '../types/match'
 
@@ -48,7 +49,7 @@ const getLaneAssignments = (
     : { top: rightMate, bottom: leftMate }
 }
 
-export const DoublesCourtDiagram = ({
+const DoublesCourtDiagramComponent = ({
   players,
   server,
   cardBg,
@@ -193,3 +194,6 @@ export const DoublesCourtDiagram = ({
     </Paper>
   )
 }
+
+export const DoublesCourtDiagram = memo(DoublesCourtDiagramComponent)
+DoublesCourtDiagram.displayName = 'DoublesCourtDiagram'

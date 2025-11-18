@@ -1,5 +1,15 @@
-import { Badge, Button, Card, Group, Stack, Text, TextInput, Title, useMantineTheme } from '@mantine/core'
-import { type FocusEvent, type KeyboardEvent } from 'react'
+import {
+  Badge,
+  Button,
+  Card,
+  Group,
+  Stack,
+  Text,
+  TextInput,
+  Title,
+  useMantineTheme,
+} from '@mantine/core'
+import { memo, useCallback, type FocusEvent, type KeyboardEvent } from 'react'
 import type { MatchConfig } from '../utils/match'
 import { didWinGame } from '../utils/match'
 import type { PlayerId, PlayerState } from '../types/match'
@@ -26,7 +36,7 @@ interface PlayerScoreCardProps {
   onSwapTeammates: (playerId: PlayerId) => void
 }
 
-export const PlayerScoreCard = ({
+const PlayerScoreCardComponent = ({
   player,
   opponent,
   cardBg,
@@ -52,6 +62,58 @@ export const PlayerScoreCard = ({
   const isWinner = matchWinner === player.id
   const serviceCourtLabel = player.points % 2 === 0 ? 'Right court' : 'Left court'
 
+  const handleNameBlur = useCallback(
+    (event: FocusEvent<HTMLInputElement>) => {
+      onNameChange(player.id, event.currentTarget.value)
+    },
+    [onNameChange, player.id],
+  )
+
+  const handleNameKeyDown = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.currentTarget.blur()
+    }
+  }, [])
+
+  const handlePointDelta = useCallback(
+    (delta: number) => {
+      onPointChange(player.id, delta)
+    },
+    [onPointChange, player.id],
+  )
+
+  const handleSwapTeammatesClick = useCallback(() => {
+    onSwapTeammates(player.id)
+  }, [onSwapTeammates, player.id])
+
+  const handleTeammateBlur = useCallback(
+    (teammateId: string, value: string) => {
+      onTeammateNameChange(player.id, teammateId, value)
+    },
+    [onTeammateNameChange, player.id],
+  )
+
+  const handleTeammateApply = useCallback(
+    (teammateId: string, name: string) => {
+      onTeammateNameChange(player.id, teammateId, name)
+    },
+    [onTeammateNameChange, player.id],
+  )
+
+  const handleTeammateSave = useCallback(
+    (teammateId: string) => {
+      onSaveTeammateName(player.id, teammateId)
+    },
+    [onSaveTeammateName, player.id],
+  )
+
+  const handleTeammateClear = useCallback(
+    (teammateId: string) => {
+      onTeammateNameChange(player.id, teammateId, '')
+    },
+    [onTeammateNameChange, player.id],
+  )
+
   return (
     <Card
       withBorder
@@ -70,14 +132,8 @@ export const PlayerScoreCard = ({
             <TextInput
               key={`${player.id}-${player.name}`}
               defaultValue={player.name}
-              onBlur={(event: FocusEvent<HTMLInputElement>) =>
-                onNameChange(player.id, event.currentTarget.value)
-              }
-              onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
-                if (event.key === 'Enter') {
-                  event.currentTarget.blur()
-                }
-              }}
+              onBlur={handleNameBlur}
+              onKeyDown={handleNameKeyDown}
               spellCheck={false}
               maxLength={24}
               flex={1}
@@ -156,7 +212,7 @@ export const PlayerScoreCard = ({
                     size="xs"
                     variant="subtle"
                     color="teal"
-                    onClick={() => onSwapTeammates(player.id)}
+                    onClick={handleSwapTeammatesClick}
                   >
                     Switch positions
                   </Button>
@@ -171,11 +227,7 @@ export const PlayerScoreCard = ({
                     size="xs"
                     flex={1}
                     onBlur={(event: FocusEvent<HTMLInputElement>) =>
-                      onTeammateNameChange(
-                        player.id,
-                        teammate.id,
-                        event.currentTarget.value,
-                      )
+                      handleTeammateBlur(teammate.id, event.currentTarget.value)
                     }
                   />
                   <SavedNamesMenu
@@ -184,11 +236,9 @@ export const PlayerScoreCard = ({
                     iconSize={14}
                     tooltipLabel="Saved names"
                     menuPosition="bottom-end"
-                    onApply={(name) =>
-                      onTeammateNameChange(player.id, teammate.id, name)
-                    }
-                    onSave={() => onSaveTeammateName(player.id, teammate.id)}
-                    onClear={() => onTeammateNameChange(player.id, teammate.id, '')}
+                    onApply={(name) => handleTeammateApply(teammate.id, name)}
+                    onSave={() => handleTeammateSave(teammate.id)}
+                    onClear={() => handleTeammateClear(teammate.id)}
                     saveLabel={`Save “${teammate.name || player.name}”`}
                     clearLabel="Clear teammate name"
                   />
@@ -201,7 +251,7 @@ export const PlayerScoreCard = ({
               variant="light"
               color="gray"
               size="lg"
-              onClick={() => onPointChange(player.id, -1)}
+              onClick={() => handlePointDelta(-1)}
               disabled={player.points === 0}
             >
               -1
@@ -209,7 +259,7 @@ export const PlayerScoreCard = ({
             <Button
               size="lg"
               color="teal"
-              onClick={() => onPointChange(player.id, 1)}
+              onClick={() => handlePointDelta(1)}
               disabled={!matchIsLive}
             >
               +1
@@ -220,3 +270,6 @@ export const PlayerScoreCard = ({
     </Card>
   )
 }
+
+export const PlayerScoreCard = memo(PlayerScoreCardComponent)
+PlayerScoreCard.displayName = 'PlayerScoreCard'

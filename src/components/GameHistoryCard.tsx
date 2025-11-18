@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Badge, Button, Card, Group, Stack, Text, Title } from '@mantine/core'
 import type { CompletedGame, PlayerId } from '../types/match'
 import { formatDuration, formatRelativeTime } from '../utils/match'
@@ -12,6 +12,22 @@ interface GameHistoryCardProps {
 
 export const GameHistoryCard = ({ cardBg, mutedText, games, onClearHistory }: GameHistoryCardProps) => {
   const [collapsed, setCollapsed] = useState(false)
+  const summaryText = useMemo(() => {
+    if (games.length === 0) {
+      return 'Completed games will appear here.'
+    }
+    return `Showing last ${games.length} ${games.length === 1 ? 'game' : 'games'}.`
+  }, [games])
+
+  const collapsedMessage = useMemo(() => {
+    if (collapsed) {
+      return 'History hidden. Use “Show history” to view completed games.'
+    }
+    if (games.length === 0) {
+      return 'Finish a game to build your history timeline.'
+    }
+    return null
+  }, [collapsed, games])
 
   return (
     <Card mt="lg" withBorder radius="lg" p="xl" style={{ backgroundColor: cardBg }}>
@@ -20,9 +36,7 @@ export const GameHistoryCard = ({ cardBg, mutedText, games, onClearHistory }: Ga
           <div>
             <Title order={5}>Game history</Title>
             <Text size="sm" c={mutedText}>
-              {games.length === 0
-                ? 'Completed games will appear here.'
-                : `Showing last ${games.length} ${games.length === 1 ? 'game' : 'games'}.`}
+              {summaryText}
             </Text>
           </div>
           <Group gap="xs">
@@ -40,13 +54,11 @@ export const GameHistoryCard = ({ cardBg, mutedText, games, onClearHistory }: Ga
             </Button>
           </Group>
         </Group>
-        {collapsed ? (
+        {collapsedMessage ? (
           <Text size="sm" c={mutedText}>
-            History hidden. Use “Show history” to view completed games.
+            {collapsedMessage}
           </Text>
-        ) : games.length === 0 ? (
-          <Text c={mutedText}>Finish a game to build your history timeline.</Text>
-        ) : (
+        ) : collapsed ? null : games.length === 0 ? null : (
           <Stack gap="sm">
             {games.map((game) => {
               const lineup: PlayerId[] = ['playerA', 'playerB']
