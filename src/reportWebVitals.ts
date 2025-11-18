@@ -1,5 +1,5 @@
 import type { Metric } from 'web-vitals'
-import { onCLS, onFID, onLCP, onFCP, onTTFB } from 'web-vitals'
+import { onCLS, onINP, onLCP, onFCP, onTTFB } from 'web-vitals'
 import { perfMonitor } from './utils/performance'
 
 const defaultReporter = (metric: Metric) => {
@@ -16,7 +16,7 @@ export const reportWebVitals = (onReport: (metric: Metric) => void = defaultRepo
   }
 
   onCLS(onReport)
-  onFID(onReport)
+  onINP(onReport)
   onLCP(onReport)
   onFCP(onReport)
   onTTFB(onReport)

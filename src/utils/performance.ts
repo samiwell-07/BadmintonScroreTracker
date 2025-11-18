@@ -18,7 +18,6 @@ export interface ProfilerMeasurement {
   baseDuration: number
   startTime: number
   commitTime: number
-  interactions: Set<{ id: number; name: string; timestamp: number }>
 }
 
 export interface UserFlowEvent {

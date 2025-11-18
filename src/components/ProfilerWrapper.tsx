@@ -12,13 +12,12 @@ interface ProfilerWrapperProps {
  */
 export const ProfilerWrapper = ({ id, children }: ProfilerWrapperProps) => {
   const handleRender: ProfilerOnRenderCallback = (
-    id,
-    phase,
-    actualDuration,
-    baseDuration,
-    startTime,
-    commitTime,
-    interactions,
+    id: string,
+    phase: 'mount' | 'update' | 'nested-update',
+    actualDuration: number,
+    baseDuration: number,
+    startTime: number,
+    commitTime: number,
   ) => {
     const measurement: ProfilerMeasurement = {
       id,
@@ -27,7 +26,6 @@ export const ProfilerWrapper = ({ id, children }: ProfilerWrapperProps) => {
       baseDuration,
       startTime,
       commitTime,
-      interactions,
     }
 
     perfMonitor.recordProfilerData(measurement)
