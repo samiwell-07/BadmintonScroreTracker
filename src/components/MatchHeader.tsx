@@ -22,6 +22,8 @@ interface MatchHeaderProps {
   onToggleScoreOnly: () => void
   simpleScoreMode: boolean
   onToggleSimpleScore: () => void
+  language: 'en' | 'fr'
+  onToggleLanguage: () => void
 }
 
 export const MatchHeader = ({
@@ -35,17 +37,34 @@ export const MatchHeader = ({
   onToggleScoreOnly,
   simpleScoreMode,
   onToggleSimpleScore,
+  language,
+  onToggleLanguage,
 }: MatchHeaderProps) => (
   <Card withBorder radius="lg" p="xl" style={{ backgroundColor: cardBg }} shadow="lg">
     <Stack gap="md">
       <Group justify="space-between" align="flex-start" wrap="wrap" gap="md">
         <div style={{ flex: 1, minWidth: '16rem' }}>
-          <Title order={2}>Badminton Score Tracker</Title>
-          <Text c={mutedText} mt="xs">
-            Keep a responsive, offline-friendly record of every rally. Scores stay in
-            local storage so you can close the tab and resume anytime. This Amazing application is made by Samuel Srouji.
-          
-          </Text>
+          <Title order={2}>
+            {language === 'en' ? 'Badminton Score Tracker' : 'Suivi de score badminton'}
+          </Title>
+          <Stack gap={4} mt="xs">
+            {(language === 'en'
+              ? [
+                  'Keep a responsive, offline-friendly record of every rally.',
+                  'Scores stay on this device so you can resume anytime.',
+                  'This application was created by Samuel Srouji.',
+                ]
+              : [
+                  'Gardez une trace hors ligne et réactive de chaque échange.',
+                  'Les scores restent sur cet appareil pour reprendre quand vous voulez.',
+                  'Cette application a été créée par Samuel Srouji.',
+                ]
+            ).map((line) => (
+              <Text key={line} c={mutedText}>
+                {line}
+              </Text>
+            ))}
+          </Stack>
         </div>
         <Stack gap="xs" align="stretch" style={{ minWidth: '12rem', width: '100%' }}>
           <Group gap="xs" grow wrap="wrap">
@@ -56,7 +75,13 @@ export const MatchHeader = ({
               aria-pressed={scoreOnlyMode}
               style={{ flex: 1, minWidth: '8rem' }}
             >
-              {scoreOnlyMode ? 'Show full view' : 'Score-only view'}
+              {scoreOnlyMode
+                ? language === 'en'
+                  ? 'Show full view'
+                  : 'Vue complète'
+                : language === 'en'
+                  ? 'Score-only view'
+                  : 'Vue score uniquement'}
             </Button>
             <Button
               variant={simpleScoreMode ? 'filled' : 'light'}
@@ -65,7 +90,13 @@ export const MatchHeader = ({
               aria-pressed={simpleScoreMode}
               style={{ flex: 1, minWidth: '8rem' }}
             >
-              {simpleScoreMode ? 'Show full view' : 'Simple score view'}
+              {simpleScoreMode
+                ? language === 'en'
+                  ? 'Show full view'
+                  : 'Vue complète'
+                : language === 'en'
+                  ? 'Simple score view'
+                  : 'Vue simple'}
             </Button>
           </Group>
           <Group gap="sm" wrap="wrap" justify="flex-end">
@@ -79,6 +110,13 @@ export const MatchHeader = ({
                 {colorScheme === 'light' ? <IconMoon size={20} /> : <IconSun size={20} />}
               </ActionIcon>
             </Tooltip>
+            <Tooltip
+              label={language === 'en' ? 'Afficher en français' : 'Show in English'}
+            >
+              <Button variant="light" onClick={onToggleLanguage}>
+                {language === 'en' ? 'FR' : 'EN'}
+              </Button>
+            </Tooltip>
             <Tooltip label="Undo last change">
               <Button
                 variant="light"
@@ -86,7 +124,7 @@ export const MatchHeader = ({
                 onClick={onUndo}
                 disabled={!canUndo}
               >
-                Undo
+                {language === 'en' ? 'Undo' : 'Annuler'}
               </Button>
             </Tooltip>
           </Group>

@@ -14,6 +14,7 @@ import { SimpleScoreView } from './components/SimpleScoreView'
 function App() {
   const { match, history, gamesNeeded, matchIsLive, actions } = useMatchController()
   const { colorScheme, pageBg, cardBg, mutedText, toggleColorMode } = useThemeColors()
+  const [language, setLanguage] = useState<'en' | 'fr'>('en')
   const [scoreOnlyMode, setScoreOnlyMode] = useState(false)
   const [simpleScoreMode, setSimpleScoreMode] = useState(false)
   const {
@@ -63,8 +64,8 @@ function App() {
   const [displayElapsedMs, setDisplayElapsedMs] = useState(match.clockElapsedMs)
 
   useEffect(() => {
-    document.title = 'Badminton Score Tracker'
-  }, [])
+    document.title = language === 'en' ? 'Badminton Score Tracker' : 'Suivi de score badminton'
+  }, [language])
 
   useEffect(() => {
     if (!match.clockRunning || !match.clockStartedAt) {
@@ -157,6 +158,10 @@ function App() {
               onToggleScoreOnly={handleScoreOnlyToggle}
               simpleScoreMode={simpleScoreMode}
               onToggleSimpleScore={handleSimpleScoreToggle}
+              language={language}
+              onToggleLanguage={() =>
+                setLanguage((current) => (current === 'en' ? 'fr' : 'en'))
+              }
             />
           )}
           <PlayerGridSection
