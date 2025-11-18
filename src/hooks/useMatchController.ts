@@ -11,13 +11,14 @@ import {
 } from '../types/match'
 import { clampPoints, didWinGame } from '../utils/match'
 import { showToast } from '../utils/notifications'
+import type { Translations } from '../i18n/translations'
 import { createFreshClockState, getLiveElapsedMs } from './matchController/clock'
 import { rotateRightCourtTeammate } from './matchController/teammates'
 import { readFromStorage } from './matchController/state'
 import { upsertSavedName } from './matchController/savedNames'
 import { createGameId } from './matchController/ids'
 
-export const useMatchController = () => {
+export const useMatchController = (t: Translations) => {
   const [match, setMatch] = useState<MatchState>(readFromStorage)
   const [history, setHistory] = useState<MatchState[]>([])
 
@@ -52,8 +53,8 @@ export const useMatchController = () => {
   const handlePointChange = (playerId: PlayerId, delta: number) => {
     if (match.matchWinner && delta > 0) {
       showToast({
-        title: 'Match finished',
-        description: 'Start a new match to keep scoring.',
+        title: t.toasts.matchFinishedTitle,
+        description: t.toasts.matchFinishedBody,
         status: 'info',
       })
       return
@@ -133,7 +134,9 @@ export const useMatchController = () => {
         }
 
         showToast({
-          title: `${winner.name} wins the ${isMatchWin ? 'match' : 'game'}`,
+          title: isMatchWin
+            ? t.toasts.matchWin(winner.name)
+            : t.toasts.gameWin(winner.name),
           status: 'success',
         })
 
@@ -165,7 +168,7 @@ export const useMatchController = () => {
   const handleUndo = () => {
     setHistory((previous) => {
       if (previous.length === 0) {
-        showToast({ title: 'Nothing to undo', status: 'warning' })
+        showToast({ title: t.toasts.nothingToUndo, status: 'warning' })
         return previous
       }
 
@@ -205,7 +208,7 @@ export const useMatchController = () => {
 
   const handleClearHistory = () => {
     if (match.completedGames.length === 0) {
-      showToast({ title: 'Nothing to erase', status: 'info' })
+      showToast({ title: t.toasts.nothingToErase, status: 'info' })
       return
     }
 
@@ -214,7 +217,7 @@ export const useMatchController = () => {
       completedGames: [],
     }))
 
-    showToast({ title: 'History cleared', status: 'success' })
+    showToast({ title: t.toasts.historyCleared, status: 'success' })
   }
 
   const handleSwapTeammates = (playerId: PlayerId) => {
@@ -326,7 +329,7 @@ export const useMatchController = () => {
 
     const trimmed = player.name.trim()
     if (!trimmed) {
-      showToast({ title: 'Cannot save empty name', status: 'warning' })
+      showToast({ title: t.toasts.cannotSaveEmptyName, status: 'warning' })
       return
     }
 
@@ -335,7 +338,7 @@ export const useMatchController = () => {
       savedNames: upsertSavedName(state.savedNames, trimmed),
     }))
 
-    showToast({ title: `Saved ${trimmed}`, status: 'success' })
+    showToast({ title: t.toasts.savedName(trimmed), status: 'success' })
   }
 
   const handleSaveTeammateName = (playerId: PlayerId, teammateId: string) => {
@@ -351,7 +354,7 @@ export const useMatchController = () => {
 
     const trimmed = teammate.name.trim()
     if (!trimmed) {
-      showToast({ title: 'Cannot save empty name', status: 'warning' })
+      showToast({ title: t.toasts.cannotSaveEmptyName, status: 'warning' })
       return
     }
 
@@ -360,7 +363,7 @@ export const useMatchController = () => {
       savedNames: upsertSavedName(state.savedNames, trimmed),
     }))
 
-    showToast({ title: `Saved ${trimmed}`, status: 'success' })
+    showToast({ title: t.toasts.savedName(trimmed), status: 'success' })
   }
 
   const handleApplySavedName = (playerId: PlayerId, name: string) => {

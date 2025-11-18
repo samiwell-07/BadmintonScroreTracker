@@ -1,5 +1,6 @@
 import { Box, Button, Card, SimpleGrid, Stack, Text, Title } from '@mantine/core'
 import type { PlayerId, PlayerState } from '../types/match'
+import type { Translations } from '../i18n/translations'
 
 interface SimpleScoreViewProps {
   players: PlayerState[]
@@ -8,6 +9,7 @@ interface SimpleScoreViewProps {
   matchIsLive: boolean
   onPointChange: (playerId: PlayerId, delta: number) => void
   onExit: () => void
+  t: Translations
 }
 
 export const SimpleScoreView = ({
@@ -17,10 +19,11 @@ export const SimpleScoreView = ({
   matchIsLive,
   onPointChange,
   onExit,
+  t,
 }: SimpleScoreViewProps) => (
   <Stack gap="lg" align="center">
     <Button size="sm" color="teal" onClick={onExit}>
-      Show full view
+      {t.common.showFullView}
     </Button>
     <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" w="100%">
       {players.map((player) => (
@@ -52,7 +55,7 @@ export const SimpleScoreView = ({
               </Button>
             </Box>
             <Text size="sm" c={mutedText}>
-              Tap the buttons to adjust score.
+              {t.simpleScore.hint}
             </Text>
           </Stack>
         </Card>

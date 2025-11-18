@@ -2,46 +2,48 @@ import { useMemo, useState } from 'react'
 import { Badge, Button, Card, Group, Stack, Text, Title } from '@mantine/core'
 import type { CompletedGame, PlayerId } from '../types/match'
 import { formatDuration, formatRelativeTime } from '../utils/match'
+import type { Translations } from '../i18n/translations'
 
 interface GameHistoryCardProps {
   cardBg: string
   mutedText: string
   games: CompletedGame[]
   onClearHistory: () => void
+  t: Translations
 }
 
-export const GameHistoryCard = ({ cardBg, mutedText, games, onClearHistory }: GameHistoryCardProps) => {
+export const GameHistoryCard = ({ cardBg, mutedText, games, onClearHistory, t }: GameHistoryCardProps) => {
   const [collapsed, setCollapsed] = useState(false)
   const summaryText = useMemo(() => {
     if (games.length === 0) {
-      return 'Completed games will appear here.'
+      return t.history.summaryEmpty
     }
-    return `Showing last ${games.length} ${games.length === 1 ? 'game' : 'games'}.`
-  }, [games])
+    return t.history.summaryCount(games.length)
+  }, [games, t])
 
   const collapsedMessage = useMemo(() => {
     if (collapsed) {
-      return 'History hidden. Use “Show history” to view completed games.'
+      return t.history.collapsedHidden
     }
     if (games.length === 0) {
-      return 'Finish a game to build your history timeline.'
+      return t.history.collapsedEmpty
     }
     return null
-  }, [collapsed, games])
+  }, [collapsed, games, t])
 
   return (
     <Card mt="lg" withBorder radius="lg" p="xl" style={{ backgroundColor: cardBg }}>
       <Stack gap="lg">
         <Group justify="space-between" align="flex-start">
           <div>
-            <Title order={5}>Game history</Title>
+            <Title order={5}>{t.history.title}</Title>
             <Text size="sm" c={mutedText}>
               {summaryText}
             </Text>
           </div>
           <Group gap="xs">
             <Button size="xs" variant="subtle" onClick={() => setCollapsed((value) => !value)}>
-              {collapsed ? 'Show history' : 'Close history'}
+              {collapsed ? t.history.showHistory : t.history.closeHistory}
             </Button>
             <Button
               size="xs"
@@ -50,7 +52,7 @@ export const GameHistoryCard = ({ cardBg, mutedText, games, onClearHistory }: Ga
               disabled={games.length === 0}
               onClick={onClearHistory}
             >
-              Erase history
+              {t.history.eraseHistory}
             </Button>
           </Group>
         </Group>
@@ -67,15 +69,15 @@ export const GameHistoryCard = ({ cardBg, mutedText, games, onClearHistory }: Ga
                   <Stack gap={4}>
                     <Group justify="space-between" wrap="wrap" gap="xs">
                       <Text size="sm" fw={600}>
-                        Game {game.number}
+                        {t.history.gameLabel(game.number)}
                       </Text>
                       <Text size="xs" c={mutedText}>
-                        {formatRelativeTime(game.timestamp)}
+                        {formatRelativeTime(game.timestamp, t.relativeTime)}
                       </Text>
                     </Group>
                     <Group gap="xs" wrap="wrap">
                       <Badge color="teal" variant="light">
-                        Winner · {game.winnerName}
+                        {t.history.winnerBadge(game.winnerName)}
                       </Badge>
                       <Badge color="gray" variant="light">
                         {formatDuration(game.durationMs)}

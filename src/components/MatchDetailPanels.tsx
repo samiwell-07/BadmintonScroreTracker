@@ -64,6 +64,7 @@ const MatchDetailPanelsComponent = ({
       onBestOfChange={onBestOfChange}
       onWinByTwoToggle={onWinByTwoToggle}
       onDoublesToggle={onDoublesToggle}
+      t={t}
     />
 
     <MatchControlsCard
@@ -85,6 +86,7 @@ const MatchDetailPanelsComponent = ({
         elapsedMs={elapsedMs}
         clockRunning={match.clockRunning}
         onToggleClock={onToggleClock}
+        t={t}
       />
     </Suspense>
 
@@ -94,6 +96,7 @@ const MatchDetailPanelsComponent = ({
         mutedText={mutedText}
         games={match.completedGames}
         onClearHistory={onClearHistory}
+        t={t}
       />
     </Suspense>
   </>

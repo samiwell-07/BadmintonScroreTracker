@@ -1,4 +1,5 @@
 import type { MatchState } from '../types/match'
+import type { RelativeTimeTranslations } from '../i18n/translations'
 
 export type MatchConfig = Pick<MatchState, 'maxPoint' | 'raceTo' | 'winByTwo'>
 
@@ -25,21 +26,24 @@ export const didWinGame = (
   return playerScore - opponentScore >= 2
 }
 
-export const formatRelativeTime = (timestamp: number) => {
+export const formatRelativeTime = (
+  timestamp: number,
+  localeStrings: RelativeTimeTranslations,
+) => {
   const elapsedMs = Date.now() - timestamp
   const seconds = Math.floor(elapsedMs / 1000)
 
-  if (seconds < 5) return 'just now'
-  if (seconds < 60) return `${seconds}s ago`
+  if (seconds < 5) return localeStrings.justNow
+  if (seconds < 60) return localeStrings.secondsAgo(seconds)
 
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes}m ago`
+  if (minutes < 60) return localeStrings.minutesAgo(minutes)
 
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
+  if (hours < 24) return localeStrings.hoursAgo(hours)
 
   const days = Math.floor(hours / 24)
-  return `${days}d ago`
+  return localeStrings.daysAgo(days)
 }
 
 const pad = (value: number) => value.toString().padStart(2, '0')

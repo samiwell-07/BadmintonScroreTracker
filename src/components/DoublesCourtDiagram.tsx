@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { Box, Paper, Stack, Text } from '@mantine/core'
 import type { PlayerId, PlayerState, TeammateState } from '../types/match'
+import type { Translations } from '../i18n/translations'
 
 interface DoublesCourtDiagramProps {
   players: PlayerState[]
@@ -8,6 +9,7 @@ interface DoublesCourtDiagramProps {
   cardBg: string
   mutedText: string
   teammateServerMap: Record<PlayerId, string>
+  t: Translations
 }
 
 type CourtSide = 'left' | 'right'
@@ -55,6 +57,7 @@ const DoublesCourtDiagramComponent = ({
   cardBg,
   mutedText,
   teammateServerMap,
+  t,
 }: DoublesCourtDiagramProps) => {
   const leftTeam = players[0]
   const rightTeam = players[1]
@@ -168,7 +171,7 @@ const DoublesCourtDiagramComponent = ({
                         </Box>
                         {(isServerLane || isReceiverLane) && (
                           <Text size="8px" c={isServerLane ? 'teal' : mutedText}>
-                            {isServerLane ? 'SERVE' : 'RECV'}
+                            {isServerLane ? t.doublesDiagram.serve : t.doublesDiagram.receive}
                           </Text>
                         )}
                       </Stack>

@@ -10,6 +10,7 @@ import {
   type MantineColorScheme,
 } from '@mantine/core'
 import { IconArrowBackUp, IconMoon, IconSun } from '@tabler/icons-react'
+import type { Translations } from '../i18n/translations'
 
 interface MatchHeaderProps {
   cardBg: string
@@ -24,6 +25,7 @@ interface MatchHeaderProps {
   onToggleSimpleScore: () => void
   language: 'en' | 'fr'
   onToggleLanguage: () => void
+  t: Translations
 }
 
 export const MatchHeader = ({
@@ -39,27 +41,15 @@ export const MatchHeader = ({
   onToggleSimpleScore,
   language,
   onToggleLanguage,
+  t,
 }: MatchHeaderProps) => (
   <Card withBorder radius="lg" p="xl" style={{ backgroundColor: cardBg }} shadow="lg">
     <Stack gap="md">
       <Group justify="space-between" align="flex-start" wrap="wrap" gap="md">
         <div style={{ flex: 1, minWidth: '16rem' }}>
-          <Title order={2}>
-            {language === 'en' ? 'Badminton Score Tracker' : 'Suivi de score badminton'}
-          </Title>
+          <Title order={2}>{t.app.headerTitle}</Title>
           <Stack gap={4} mt="xs">
-            {(language === 'en'
-              ? [
-                  'Keep a responsive, offline-friendly record of every rally.',
-                  'Scores stay on this device so you can resume anytime.',
-                  'This application was created by Samuel Srouji.',
-                ]
-              : [
-                  'Gardez une trace hors ligne et réactive de chaque échange.',
-                  'Les scores restent sur cet appareil pour reprendre quand vous voulez.',
-                  'Cette application a été créée par Samuel Srouji.',
-                ]
-            ).map((line) => (
+            {t.app.descriptionLines.map((line) => (
               <Text key={line} c={mutedText}>
                 {line}
               </Text>
@@ -75,13 +65,7 @@ export const MatchHeader = ({
               aria-pressed={scoreOnlyMode}
               style={{ flex: 1, minWidth: '8rem' }}
             >
-              {scoreOnlyMode
-                ? language === 'en'
-                  ? 'Show full view'
-                  : 'Vue complète'
-                : language === 'en'
-                  ? 'Score-only view'
-                  : 'Vue score uniquement'}
+              {scoreOnlyMode ? t.header.scoreOnlyActive : t.header.scoreOnlyInactive}
             </Button>
             <Button
               variant={simpleScoreMode ? 'filled' : 'light'}
@@ -90,41 +74,33 @@ export const MatchHeader = ({
               aria-pressed={simpleScoreMode}
               style={{ flex: 1, minWidth: '8rem' }}
             >
-              {simpleScoreMode
-                ? language === 'en'
-                  ? 'Show full view'
-                  : 'Vue complète'
-                : language === 'en'
-                  ? 'Simple score view'
-                  : 'Vue simple'}
+              {simpleScoreMode ? t.header.simpleActive : t.header.simpleInactive}
             </Button>
           </Group>
           <Group gap="sm" wrap="wrap" justify="flex-end">
-            <Tooltip label="Swap light / dark mode">
+            <Tooltip label={t.header.colorSchemeTooltip}>
               <ActionIcon
                 variant="outline"
                 size="lg"
                 onClick={onToggleColorMode}
-                aria-label="Toggle color scheme"
+                aria-label={t.header.colorSchemeAriaLabel}
               >
                 {colorScheme === 'light' ? <IconMoon size={20} /> : <IconSun size={20} />}
               </ActionIcon>
             </Tooltip>
-            <Tooltip
-              label={language === 'en' ? 'Afficher en français' : 'Show in English'}
-            >
+            <Tooltip label={t.header.languageTooltip}>
               <Button variant="light" onClick={onToggleLanguage}>
                 {language === 'en' ? 'FR' : 'EN'}
               </Button>
             </Tooltip>
-            <Tooltip label="Undo last change">
+            <Tooltip label={t.header.undoTooltip}>
               <Button
                 variant="light"
                 leftSection={<IconArrowBackUp size={18} />}
                 onClick={onUndo}
                 disabled={!canUndo}
               >
-                {language === 'en' ? 'Undo' : 'Annuler'}
+                {t.header.undo}
               </Button>
             </Tooltip>
           </Group>

@@ -14,6 +14,7 @@ import type { MatchConfig } from '../utils/match'
 import { didWinGame } from '../utils/match'
 import type { PlayerId, PlayerState } from '../types/match'
 import { SavedNamesMenu } from './SavedNamesMenu'
+import type { Translations } from '../i18n/translations'
 
 interface PlayerScoreCardProps {
   player: PlayerState
@@ -34,6 +35,7 @@ interface PlayerScoreCardProps {
   onTeammateNameChange: (playerId: PlayerId, teammateId: string, name: string) => void
   onSaveTeammateName: (playerId: PlayerId, teammateId: string) => void
   onSwapTeammates: (playerId: PlayerId) => void
+  t: Translations
 }
 
 const PlayerScoreCardComponent = ({
@@ -55,12 +57,13 @@ const PlayerScoreCardComponent = ({
   onTeammateNameChange,
   onSaveTeammateName,
   onSwapTeammates,
+  t,
 }: PlayerScoreCardProps) => {
   const theme = useMantineTheme()
   const isGamePoint = didWinGame(player.points + 1, opponent.points, matchConfig)
   const isMatchPoint = isGamePoint && player.games === gamesNeeded - 1
   const isWinner = matchWinner === player.id
-  const serviceCourtLabel = player.points % 2 === 0 ? 'Right court' : 'Left court'
+  const serviceCourtLabel = player.points % 2 === 0 ? t.rotation.court.right : t.rotation.court.left
 
   const handleNameBlur = useCallback(
     (event: FocusEvent<HTMLInputElement>) => {
@@ -152,30 +155,32 @@ const PlayerScoreCardComponent = ({
               menuPosition="bottom-end"
               onApply={(name) => onApplySavedName(player.id, name)}
               onSave={() => onSaveName(player.id)}
-              saveLabel={`Save “${player.name}”`}
+              saveLabel={t.playerCard.savePlayerName(player.name)}
               onClear={() => onNameChange(player.id, '')}
-              clearLabel="Reset to default"
+              clearLabel={t.playerCard.resetPlayerName}
+              tooltipLabel={t.playerCard.savedNamesTooltip}
+              t={t.savedNamesMenu}
             />
           </Group>
           <Group gap="xs" wrap="wrap">
             {isServer && (
               <Badge color="cyan" variant="light">
-                Serving - {serviceCourtLabel}
+                {t.playerCard.serviceBadge(serviceCourtLabel)}
               </Badge>
             )}
             {isMatchPoint && (
               <Badge color="red" variant="filled">
-                Match point
+                {t.playerCard.matchPoint}
               </Badge>
             )}
             {!isMatchPoint && isGamePoint && (
               <Badge color="orange" variant="light">
-                Game point
+                {t.playerCard.gamePoint}
               </Badge>
             )}
             {isWinner && (
               <Badge color="green" variant="light">
-                Winner
+                {t.playerCard.winner}
               </Badge>
             )}
           </Group>
@@ -185,7 +190,7 @@ const PlayerScoreCardComponent = ({
             <Group align="flex-end" gap="xl" wrap="wrap">
               <div>
                 <Text size="sm" c={mutedText}>
-                  Points
+                  {t.playerCard.pointsLabel}
                 </Text>
                 <Title order={1} style={{ lineHeight: 1, fontSize: '4rem' }}>
                   {player.points}
@@ -193,7 +198,7 @@ const PlayerScoreCardComponent = ({
               </div>
               <div>
                 <Text size="sm" c={mutedText}>
-                  Games won
+                  {t.playerCard.gamesWonLabel}
                 </Text>
                 <Title order={3} style={{ lineHeight: 1 }}>
                   {player.games}
@@ -205,7 +210,7 @@ const PlayerScoreCardComponent = ({
             <Stack gap="xs">
               <Group justify="space-between" align="center">
                 <Text size="sm" c={mutedText}>
-                  Teammate lineup
+                  {t.playerCard.teammateLineup}
                 </Text>
                 {player.teammates.length > 1 && (
                   <Button
@@ -214,7 +219,7 @@ const PlayerScoreCardComponent = ({
                     color="teal"
                     onClick={handleSwapTeammatesClick}
                   >
-                    Switch positions
+                    {t.playerCard.switchTeammates}
                   </Button>
                 )}
               </Group>
@@ -234,13 +239,14 @@ const PlayerScoreCardComponent = ({
                     savedNames={savedNames}
                     actionSize="sm"
                     iconSize={14}
-                    tooltipLabel="Saved names"
+                    tooltipLabel={t.playerCard.savedNamesTooltip}
                     menuPosition="bottom-end"
                     onApply={(name) => handleTeammateApply(teammate.id, name)}
                     onSave={() => handleTeammateSave(teammate.id)}
                     onClear={() => handleTeammateClear(teammate.id)}
-                    saveLabel={`Save “${teammate.name || player.name}”`}
-                    clearLabel="Clear teammate name"
+                    saveLabel={t.playerCard.saveTeammateName(teammate.name || player.name)}
+                    clearLabel={t.playerCard.clearTeammateName}
+                    t={t.savedNamesMenu}
                   />
                 </Group>
               ))}

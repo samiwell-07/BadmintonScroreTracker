@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react'
 import { Affix, Button, Group, Paper, Stack, Text } from '@mantine/core'
 import type { PlayerId, PlayerState } from '../types/match'
 import { getRotationSummary } from '../utils/doublesRotation'
+import type { Translations } from '../i18n/translations'
 
 interface ScoreOnlyOverlaysProps {
   active: boolean
@@ -13,6 +14,7 @@ interface ScoreOnlyOverlaysProps {
   onExitScoreOnly: () => void
   onSetServer: (playerId: PlayerId) => void
   onToggleServer: () => void
+  t: Translations
 }
 
 export const ScoreOnlyOverlays = ({
@@ -25,6 +27,7 @@ export const ScoreOnlyOverlays = ({
   onExitScoreOnly,
   onSetServer,
   onToggleServer,
+  t,
 }: ScoreOnlyOverlaysProps) => {
   const rotationSummary = useMemo(
     () =>
@@ -47,7 +50,7 @@ export const ScoreOnlyOverlays = ({
     <>
       <Affix position={{ top: 16, right: 16 }}>
         <Button size="sm" color="teal" onClick={onExitScoreOnly}>
-          Show full view
+          {t.common.showFullView}
         </Button>
       </Affix>
       <Paper withBorder shadow="lg" radius="lg" p="md">
@@ -55,18 +58,25 @@ export const ScoreOnlyOverlays = ({
           {rotationSummary && (
             <Stack gap={2}>
               <Text size="xs" fw={600} c={mutedText}>
-                Doubles rotation
+                {t.rotation.heading}
               </Text>
               <Text size="sm">
-                {`${rotationSummary.servingTeamName} serving from the ${rotationSummary.courtSide === 'right' ? 'right court' : 'left court'} with ${rotationSummary.servingPartnerName}.`}
+                {t.rotation.servingSentence(
+                  rotationSummary.servingTeamName,
+                  rotationSummary.courtSide,
+                  rotationSummary.servingPartnerName,
+                )}
               </Text>
               <Text size="sm" c={mutedText}>
-                {`${rotationSummary.receivingTeamName} receiving with ${rotationSummary.receivingPartnerName}.`}
+                {t.rotation.receivingSentence(
+                  rotationSummary.receivingTeamName,
+                  rotationSummary.receivingPartnerName,
+                )}
               </Text>
             </Stack>
           )}
           <Text size="xs" c={mutedText} fw={600}>
-            Serving player
+            {t.overlays.servingLabel}
           </Text>
           <Group gap="xs" wrap="wrap">
             {players.map((player) => {
@@ -84,7 +94,7 @@ export const ScoreOnlyOverlays = ({
               )
             })}
             <Button size="sm" variant="subtle" color="gray" onClick={onToggleServer}>
-              Swap
+              {t.overlays.swapButton}
             </Button>
           </Group>
         </Stack>

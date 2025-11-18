@@ -5,13 +5,12 @@ import { PlayerGridSection } from './components/PlayerGridSection'
 import { ScoreOnlyOverlays } from './components/ScoreOnlyOverlays'
 import { useMatchController } from './hooks/useMatchController'
 import { useThemeColors } from './hooks/useThemeColors'
+import { useLanguage } from './hooks/useLanguage'
 import type { MatchState } from './types/match'
 import type { MatchConfig } from './utils/match'
-import { translations, type Language } from './i18n/translations'
 const STORAGE_KEYS = {
   scoreOnly: 'scoreOnlyMode',
   simpleScore: 'simpleScoreMode',
-  language: 'bst-language',
 } as const
 
 const readStoredBoolean = (key: string, fallback = false) => {
@@ -26,42 +25,12 @@ const readStoredBoolean = (key: string, fallback = false) => {
   }
 }
 
-const readStoredLanguage = () => {
-  if (typeof window === 'undefined') return 'en'
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEYS.language)
-    if (raw === 'en' || raw === 'fr') {
-      return raw
-    }
-  } catch {
-    // ignore
-  }
-  if (typeof navigator !== 'undefined') {
-    return navigator.language.toLowerCase().startsWith('fr') ? 'fr' : 'en'
-  }
-  return 'en'
-}
-
 const useDebouncedBooleanStorage = (key: string, value: boolean, delay = 200) => {
   useEffect(() => {
     if (typeof window === 'undefined') return
     const handle = window.setTimeout(() => {
       try {
         window.localStorage.setItem(key, value ? 'true' : 'false')
-      } catch {
-        /* ignore storage issues */
-      }
-    }, delay)
-    return () => window.clearTimeout(handle)
-  }, [key, value, delay])
-}
-
-const useDebouncedStringStorage = (key: string, value: string, delay = 200) => {
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const handle = window.setTimeout(() => {
-      try {
-        window.localStorage.setItem(key, value)
       } catch {
         /* ignore storage issues */
       }
@@ -87,9 +56,9 @@ const SimpleScoreView = lazy(() =>
 )
 
 function App() {
-  const { match, history, gamesNeeded, matchIsLive, actions } = useMatchController()
+  const { language, toggleLanguage, t } = useLanguage()
+  const { match, history, gamesNeeded, matchIsLive, actions } = useMatchController(t)
   const { colorScheme, pageBg, cardBg, mutedText, toggleColorMode } = useThemeColors()
-  const [language, setLanguage] = useState<Language>(() => readStoredLanguage())
   const [scoreOnlyMode, setScoreOnlyMode] = useState(() =>
     readStoredBoolean(STORAGE_KEYS.scoreOnly),
   )
@@ -116,7 +85,6 @@ function App() {
     pushUpdate,
   } = actions
 
-  useDebouncedStringStorage(STORAGE_KEYS.language, language)
   useDebouncedBooleanStorage(STORAGE_KEYS.scoreOnly, scoreOnlyMode)
   useDebouncedBooleanStorage(STORAGE_KEYS.simpleScore, simpleScoreMode)
 
@@ -149,17 +117,7 @@ function App() {
     })
   }, [])
 
-  const handleLanguageToggle = useCallback(() => {
-    setLanguage((current) => (current === 'en' ? 'fr' : 'en'))
-  }, [])
-
-  const t = useMemo(() => translations[language], [language])
-
   const [displayElapsedMs, setDisplayElapsedMs] = useState(match.clockElapsedMs)
-
-  useEffect(() => {
-    document.title = language === 'en' ? 'Badminton Score Tracker' : 'Suivi de score badminton'
-  }, [language])
 
   useEffect(() => {
     if (!match.clockRunning || !match.clockStartedAt) {
@@ -230,7 +188,7 @@ function App() {
         style={{ minHeight: '100vh', backgroundColor: pageBg, paddingInline: '0.75rem' }}
       >
         <Container size="md" style={{ paddingTop: '2.5rem', paddingBottom: '3.5rem' }}>
-          <Suspense fallback={<Stack gap="xs">Loading score view…</Stack>}>
+          <Suspense fallback={<Stack gap="xs">{t.app.loadingScoreView}</Stack>}>
             <SimpleScoreView
               players={match.players}
               cardBg={cardBg}
@@ -238,6 +196,7 @@ function App() {
               matchIsLive={matchIsLive}
               onPointChange={handlePointChange}
               onExit={() => setSimpleScoreMode(false)}
+              t={t}
             />
           </Suspense>
         </Container>
@@ -264,7 +223,8 @@ function App() {
               simpleScoreMode={simpleScoreMode}
               onToggleSimpleScore={handleSimpleScoreToggle}
               language={language}
-              onToggleLanguage={handleLanguageToggle}
+              onToggleLanguage={toggleLanguage}
+              t={t}
             />
           )}
           <PlayerGridSection
@@ -286,22 +246,24 @@ function App() {
             onTeammateNameChange={handleTeammateNameChange}
             onSaveTeammateName={handleSaveTeammateName}
             onSwapTeammates={handleSwapTeammates}
+            t={t}
           />
 
           {match.doublesMode && (
-            <Suspense fallback={<Stack gap="xs">Loading doubles diagram…</Stack>}>
+            <Suspense fallback={<Stack gap="xs">{t.app.loadingDoublesDiagram}</Stack>}>
               <DoublesCourtDiagram
                 players={match.players}
                 server={match.server}
                 cardBg={cardBg}
                 mutedText={mutedText}
                 teammateServerMap={match.teammateServerMap}
+                t={t}
               />
             </Suspense>
           )}
 
           {!scoreOnlyMode && (
-            <Suspense fallback={<Stack gap="xs">Loading match details…</Stack>}>
+            <Suspense fallback={<Stack gap="xs">{t.app.loadingMatchDetails}</Stack>}>
               <MatchDetailPanels
                 cardBg={cardBg}
                 mutedText={mutedText}
@@ -319,7 +281,7 @@ function App() {
                 onResetMatch={handleResetMatch}
                 onToggleClock={handleClockToggle}
                 onClearHistory={handleClearHistory}
-                 t={t}
+                t={t}
               />
             </Suspense>
           )}
@@ -334,6 +296,7 @@ function App() {
             onExitScoreOnly={handleScoreOnlyToggle}
             onSetServer={handleSetServer}
             onToggleServer={handleServerToggle}
+            t={t}
           />
         </Stack>
       </Container>

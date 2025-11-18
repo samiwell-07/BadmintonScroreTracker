@@ -1,6 +1,7 @@
 import { ActionIcon, Menu, Tooltip } from '@mantine/core'
 import type { ActionIconProps, MenuProps } from '@mantine/core'
 import { IconBookmarkPlus, IconCircleX, IconUserCircle } from '@tabler/icons-react'
+import type { Translations } from '../i18n/translations'
 
 interface SavedNamesMenuProps {
   savedNames: string[]
@@ -14,6 +15,7 @@ interface SavedNamesMenuProps {
   menuWithinPortal?: boolean
   saveLabel?: string
   clearLabel?: string
+  t?: Translations['savedNamesMenu']
 }
 
 export const SavedNamesMenu = ({
@@ -28,17 +30,18 @@ export const SavedNamesMenu = ({
   menuWithinPortal = true,
   saveLabel = 'Save current name',
   clearLabel = 'Clear name',
+  t,
 }: SavedNamesMenuProps) => (
   <Menu withinPortal={menuWithinPortal} position={menuPosition} shadow="md">
     <Menu.Target>
-      <Tooltip label={tooltipLabel}>
+      <Tooltip label={t?.tooltip ?? tooltipLabel}>
         <ActionIcon variant="light" size={actionSize}>
           <IconUserCircle size={iconSize} />
         </ActionIcon>
       </Tooltip>
     </Menu.Target>
     <Menu.Dropdown>
-      <Menu.Label>Saved names</Menu.Label>
+      <Menu.Label>{t?.menuLabel ?? 'Saved names'}</Menu.Label>
       {onClear && (
         <>
           <Menu.Item leftSection={<IconCircleX size={iconSize} />} onClick={onClear}>
@@ -47,7 +50,9 @@ export const SavedNamesMenu = ({
           {savedNames.length > 0 && <Menu.Divider />}
         </>
       )}
-      {savedNames.length === 0 && <Menu.Item disabled>No saved names</Menu.Item>}
+      {savedNames.length === 0 && (
+        <Menu.Item disabled>{t?.noSavedNames ?? 'No saved names'}</Menu.Item>
+      )}
       {savedNames.map((name) => (
         <Menu.Item key={name} onClick={() => onApply(name)}>
           {name}

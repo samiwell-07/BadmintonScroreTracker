@@ -20,6 +20,7 @@ export const MatchControlsCard = ({
   onResetMatch,
   t,
 }: MatchControlsCardProps) => {
+  const { controls, common } = t
   const [resetGameModalOpened, { open: openResetGameModal, close: closeResetGameModal }] =
     useDisclosure(false)
   const [resetMatchModalOpened, { open: openResetMatchModal, close: closeResetMatchModal }] =
@@ -40,18 +41,18 @@ export const MatchControlsCard = ({
       <Modal
         opened={resetGameModalOpened}
         onClose={closeResetGameModal}
-        title={t.resetPointsModalTitle}
+        title={controls.resetPointsModalTitle}
       >
         <Stack gap="sm">
           <Text size="sm" c="dimmed">
-            {t.resetPointsModalBody}
+            {controls.resetPointsModalBody}
           </Text>
           <Group gap="sm" justify="flex-end">
             <Button variant="subtle" onClick={closeResetGameModal}>
-              {t.cancel}
+              {common.cancel}
             </Button>
             <Button color="red" onClick={handleConfirmResetGame}>
-              {t.resetPoints}
+              {controls.resetPoints}
             </Button>
           </Group>
         </Stack>
@@ -60,18 +61,18 @@ export const MatchControlsCard = ({
       <Modal
         opened={resetMatchModalOpened}
         onClose={closeResetMatchModal}
-        title={t.resetMatchModalTitle}
+        title={controls.resetMatchModalTitle}
       >
         <Stack gap="sm">
           <Text size="sm" c="dimmed">
-            {t.resetMatchModalBody}
+            {controls.resetMatchModalBody}
           </Text>
           <Group gap="sm" justify="flex-end">
             <Button variant="subtle" onClick={closeResetMatchModal}>
-              {t.cancel}
+              {common.cancel}
             </Button>
             <Button color="red" onClick={handleConfirmResetMatch}>
-              {t.startNewMatch}
+              {controls.startNewMatch}
             </Button>
           </Group>
         </Stack>
@@ -81,31 +82,31 @@ export const MatchControlsCard = ({
         <Stack gap="lg">
           <Stack gap={4}>
             <Text size="sm" fw={600} c="dimmed">
-              {t.adjustPositionsHeading}
+              {controls.adjustPositionsHeading}
             </Text>
             <Group gap="sm" wrap="wrap">
               <Button variant="light" leftSection={<IconRepeat size={18} />} onClick={onSwapEnds}>
-                {t.swapEnds}
+                {controls.swapEnds}
               </Button>
               <Button variant="light" onClick={onToggleServer}>
-                {t.toggleServer}
+                {controls.toggleServer}
               </Button>
             </Group>
           </Stack>
 
           <Stack gap={4}>
             <Text size="sm" fw={600} c="dimmed">
-              {t.resetsHeading}
+              {controls.resetsHeading}
             </Text>
             <Group gap="sm" wrap="wrap">
-              <Tooltip label={t.resetPointsTooltip} withArrow>
+              <Tooltip label={controls.resetPointsTooltip} withArrow>
                 <Button variant="light" color="orange" onClick={openResetGameModal}>
-                  {t.resetPoints}
+                  {controls.resetPoints}
                 </Button>
               </Tooltip>
-              <Tooltip label={t.resetMatchTooltip} withArrow>
+              <Tooltip label={controls.resetMatchTooltip} withArrow>
                 <Button color="red" onClick={openResetMatchModal}>
-                  {t.startNewMatch}
+                  {controls.startNewMatch}
                 </Button>
               </Tooltip>
             </Group>

@@ -4,6 +4,7 @@ import type { PlayerId, PlayerState } from '../types/match'
 import type { MatchConfig } from '../utils/match'
 import { PlayerScoreCard } from './PlayerScoreCard'
 import { getRotationSummary } from '../utils/doublesRotation'
+import type { Translations } from '../i18n/translations'
 
 interface PlayerGridSectionProps {
   players: PlayerState[]
@@ -24,6 +25,7 @@ interface PlayerGridSectionProps {
   onTeammateNameChange: (playerId: PlayerId, teammateId: string, name: string) => void
   onSaveTeammateName: (playerId: PlayerId, teammateId: string) => void
   onSwapTeammates: (playerId: PlayerId) => void
+  t: Translations
 }
 
 const PlayerGridSectionComponent = ({
@@ -45,6 +47,7 @@ const PlayerGridSectionComponent = ({
   onTeammateNameChange,
   onSaveTeammateName,
   onSwapTeammates,
+  t,
 }: PlayerGridSectionProps) => {
   const rotationSummary = useMemo(
     () =>
@@ -60,13 +63,20 @@ const PlayerGridSectionComponent = ({
         <Paper withBorder radius="lg" p="md" style={{ backgroundColor: cardBg }}>
           <Stack gap={4}>
             <Text size="sm" fw={600} c={mutedText}>
-              Doubles rotation
+              {t.rotation.heading}
             </Text>
             <Text size="sm">
-              {`${rotationSummary.servingTeamName} serving from the ${rotationSummary.courtSide === 'right' ? 'right court' : 'left court'} with ${rotationSummary.servingPartnerName}.`}
+              {t.rotation.servingSentence(
+                rotationSummary.servingTeamName,
+                rotationSummary.courtSide,
+                rotationSummary.servingPartnerName,
+              )}
             </Text>
             <Text size="sm" c={mutedText}>
-              {`${rotationSummary.receivingTeamName} receiving with ${rotationSummary.receivingPartnerName}.`}
+              {t.rotation.receivingSentence(
+                rotationSummary.receivingTeamName,
+                rotationSummary.receivingPartnerName,
+              )}
             </Text>
           </Stack>
         </Paper>
@@ -98,6 +108,7 @@ const PlayerGridSectionComponent = ({
               onTeammateNameChange={onTeammateNameChange}
               onSaveTeammateName={onSaveTeammateName}
               onSwapTeammates={onSwapTeammates}
+              t={t}
             />
           )
         })}

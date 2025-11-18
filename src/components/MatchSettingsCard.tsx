@@ -11,6 +11,7 @@ import {
 import { type ChangeEvent } from 'react'
 import type { MatchState } from '../types/match'
 import { BEST_OF_OPTIONS } from '../types/match'
+import type { Translations } from '../i18n/translations'
 
 interface MatchSettingsCardProps {
   cardBg: string
@@ -20,6 +21,7 @@ interface MatchSettingsCardProps {
   onBestOfChange: (value: MatchState['bestOf']) => void
   onWinByTwoToggle: (checked: boolean) => void
   onDoublesToggle: (checked: boolean) => void
+  t: Translations
 }
 
 export const MatchSettingsCard = ({
@@ -30,14 +32,15 @@ export const MatchSettingsCard = ({
   onBestOfChange,
   onWinByTwoToggle,
   onDoublesToggle,
+  t,
 }: MatchSettingsCardProps) => (
   <Card mt="lg" withBorder radius="lg" p="xl" style={{ backgroundColor: cardBg }}>
     <Stack gap="lg">
-      <Title order={4}>Match settings</Title>
+      <Title order={4}>{t.settings.title}</Title>
       <SimpleGrid cols={{ base: 1, md: 3 }} spacing="lg">
         <Stack gap="xs">
           <Text size="sm" c={mutedText}>
-            Target points per game
+            {t.settings.raceToLabel}
           </Text>
           <NumberInput
             min={11}
@@ -52,12 +55,12 @@ export const MatchSettingsCard = ({
         </Stack>
         <Stack gap="xs">
           <Text size="sm" c={mutedText}>
-            Match length
+            {t.settings.matchLengthLabel}
           </Text>
           <Select
             data={BEST_OF_OPTIONS.map((option) => ({
               value: option.toString(),
-              label: `Best of ${option}`,
+              label: t.settings.bestOfOption(option),
             }))}
             value={match.bestOf.toString()}
             onChange={(value: string | null) => {
@@ -68,26 +71,26 @@ export const MatchSettingsCard = ({
         </Stack>
         <Stack gap="xs">
           <Text size="sm" c={mutedText}>
-            Require two-point lead
+            {t.settings.winByTwoLabel}
           </Text>
           <Switch
             checked={match.winByTwo}
             onChange={(event: ChangeEvent<HTMLInputElement>) =>
               onWinByTwoToggle(event.currentTarget.checked)
             }
-            label={match.winByTwo ? 'Enabled' : 'Disabled'}
+            label={match.winByTwo ? t.settings.winByTwoEnabled : t.settings.winByTwoDisabled}
           />
         </Stack>
         <Stack gap="xs">
           <Text size="sm" c={mutedText}>
-            Doubles contributions
+            {t.settings.doublesLabel}
           </Text>
           <Switch
             checked={match.doublesMode}
             onChange={(event: ChangeEvent<HTMLInputElement>) =>
               onDoublesToggle(event.currentTarget.checked)
             }
-            label={match.doublesMode ? 'Tracking' : 'Hidden'}
+            label={match.doublesMode ? t.settings.doublesEnabled : t.settings.doublesDisabled}
           />
         </Stack>
       </SimpleGrid>
